@@ -1,3 +1,4 @@
+
 // ESC/POS command utilities for thermal printers (RONGTA RP330 series)
 export class ESCPOSFormatter {
   // ESC/POS control commands
@@ -8,6 +9,14 @@ export class ESCPOSFormatter {
   
   // Store the selected serial port to avoid repeated prompts
   private static selectedPort: any = null;
+
+  // New: feature flag to control serial printing (default disabled to avoid prompts)
+  private static preferSerial: boolean = false;
+
+  // Optional: allow apps to enable/disable serial printing explicitly
+  static setPreferSerialPrinting(enable: boolean) {
+    this.preferSerial = enable;
+  }
   
   // Initialize printer
   static init(): string {
@@ -137,38 +146,39 @@ export class ESCPOSFormatter {
   }
   
   private static async printDirectly(content: string): Promise<void> {
-    // Method 1: Try Web Serial API for direct USB connection to thermal printer
-    if ('serial' in navigator) {
+    // Method 1: Optional Web Serial API (only if explicitly enabled AND a saved port exists)
+    if (this.preferSerial && 'serial' in navigator) {
       try {
-        // Use stored port if available, otherwise request new port
+        // Do NOT prompt the user. Only use an already saved/selected port.
         if (!this.selectedPort) {
-          this.selectedPort = await (navigator as any).serial.requestPort();
+          console.log('[ESCPOS] Serial printing enabled but no saved port found. Skipping serial and using browser print.');
+          // Fall through to browser printing
+        } else {
+          // Check if port is already open, if not open it
+          if (!this.selectedPort.readable) {
+            await this.selectedPort.open({ baudRate: 9600 });
+          }
+          
+          const writer = this.selectedPort.writable.getWriter();
+          const encoder = new TextEncoder();
+          
+          // Send raw ESC/POS content WITH cut commands for thermal printer
+          await writer.write(encoder.encode(content));
+          await writer.close();
+          
+          console.log('Ticket printed successfully via Serial API with automatic paper cut');
+          return;
         }
-        
-        // Check if port is already open, if not open it
-        if (!this.selectedPort.readable) {
-          await this.selectedPort.open({ baudRate: 9600 });
-        }
-        
-        const writer = this.selectedPort.writable.getWriter();
-        const encoder = new TextEncoder();
-        
-        // Send raw ESC/POS content WITH cut commands for thermal printer
-        await writer.write(encoder.encode(content));
-        await writer.close();
-        
-        console.log('Ticket printed successfully via Serial API with automatic paper cut');
-        return;
       } catch (error) {
         console.warn('Serial printing failed:', error);
-        // Reset port on error so user can select a different one next time
+        // Reset port on error so user can select a different one next time (if they opt in elsewhere)
         this.selectedPort = null;
         
-        // Show error dialog in Electron
+        // Show error dialog in Electron if available
         if (typeof window !== 'undefined' && (window as any).electronAPI) {
           await (window as any).electronAPI.showErrorDialog(
             'Erreur d\'impression', 
-            'Impossible de se connecter à l\'imprimante thermique. Vérifiez la connexion USB.'
+            'Impossible de se connecter à l\'imprimante thermique. Impression via le navigateur.'
           );
         }
         // fall through to browser printing fallback below
@@ -406,3 +416,4 @@ export class ESCPOSFormatter {
     }
   }
 }
+
