@@ -1,5 +1,6 @@
 
 import { ESCPOSFormatter } from '../utils/escposUtils';
+import { getOrders } from './cafeService';
 
 export const printThermalRevenueReport = (
   filteredData: any[], 
@@ -11,6 +12,17 @@ export const printThermalRevenueReport = (
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+
+  const formatDateTime = (dateTime: string | Date) => {
+    const date = new Date(dateTime);
+    return date.toLocaleDateString('fr-FR', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const getPeriodLabel = () => {
@@ -27,6 +39,33 @@ export const printThermalRevenueReport = (
         return 'Période inconnue';
     }
   };
+
+  // Get detailed orders for the period
+  const allOrders = getOrders();
+  const filteredOrders = allOrders.filter(order => {
+    const orderDate = new Date(order.date).toISOString().split('T')[0];
+    return orderDate >= startDate && orderDate <= endDate;
+  });
+
+  // Calculate statistics
+  const totalOrders = filteredOrders.length;
+  const totalItems = filteredOrders.reduce((sum, order) => 
+    sum + order.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0);
+
+  // Group orders by agent
+  const ordersByAgent = filteredOrders.reduce((acc: any, order) => {
+    if (!acc[order.agentName]) {
+      acc[order.agentName] = {
+        orders: [],
+        totalRevenue: 0,
+        totalOrders: 0
+      };
+    }
+    acc[order.agentName].orders.push(order);
+    acc[order.agentName].totalRevenue += order.total;
+    acc[order.agentName].totalOrders += 1;
+    return acc;
+  }, {});
 
   // Generate thermal receipt
   let report = ESCPOSFormatter.init();
@@ -47,7 +86,9 @@ export const printThermalRevenueReport = (
   // Report title
   report += ESCPOSFormatter.textDoubleHeight();
   report += ESCPOSFormatter.textBold();
-  report += "RAPPORT DE REVENUS";
+  report += "RAPPORT DETAILLE";
+  report += ESCPOSFormatter.newLine();
+  report += "DES REVENUS";
   report += ESCPOSFormatter.textNormal();
   report += ESCPOSFormatter.textBoldOff();
   report += ESCPOSFormatter.multipleLines(2);
@@ -66,7 +107,7 @@ export const printThermalRevenueReport = (
   // Period and summary
   report += ESCPOSFormatter.alignLeft();
   report += ESCPOSFormatter.textBold();
-  report += "RÉSUMÉ";
+  report += "RÉSUMÉ GÉNÉRAL";
   report += ESCPOSFormatter.textBoldOff();
   report += ESCPOSFormatter.newLine();
   report += ESCPOSFormatter.horizontalLine('-', 32);
@@ -74,10 +115,17 @@ export const printThermalRevenueReport = (
   
   report += `Période: ${getPeriodLabel()}`;
   report += ESCPOSFormatter.newLine();
-  report += `Nombre de jours: ${filteredData.length}`;
+  report += `Nombre de commandes: ${totalOrders}`;
   report += ESCPOSFormatter.newLine();
-  report += `Moyenne/jour: ${filteredData.length ? (totalRevenue / filteredData.length).toFixed(2) : 0} MAD`;
-  report += ESCPOSFormatter.multipleLines(2);
+  report += `Articles vendus: ${totalItems}`;
+  report += ESCPOSFormatter.newLine();
+  report += `Nombre d'agents: ${Object.keys(ordersByAgent).length}`;
+  report += ESCPOSFormatter.newLine();
+  if (totalOrders > 0) {
+    report += `Panier moyen: ${(totalRevenue / totalOrders).toFixed(2)} MAD`;
+    report += ESCPOSFormatter.newLine();
+  }
+  report += ESCPOSFormatter.multipleLines(1);
   
   // Total revenue
   report += ESCPOSFormatter.alignCenter();
@@ -87,37 +135,94 @@ export const printThermalRevenueReport = (
   report += ESCPOSFormatter.textNormal();
   report += ESCPOSFormatter.textBoldOff();
   report += ESCPOSFormatter.multipleLines(2);
-  
-  // Details section
-  if (filteredData.length > 0) {
+
+  // Agents performance section
+  if (Object.keys(ordersByAgent).length > 0) {
     report += ESCPOSFormatter.alignCenter();
     report += ESCPOSFormatter.horizontalLine('=', 32);
     report += ESCPOSFormatter.newLine();
     report += ESCPOSFormatter.textBold();
-    report += "DÉTAILS PAR JOUR";
+    report += "PERFORMANCE PAR AGENT";
     report += ESCPOSFormatter.textBoldOff();
     report += ESCPOSFormatter.newLine();
     report += ESCPOSFormatter.horizontalLine('=', 32);
     report += ESCPOSFormatter.newLine();
     
     report += ESCPOSFormatter.alignLeft();
-    filteredData.forEach((revenue, index) => {
-      report += `${index + 1}. ${formatDate(revenue.date)}`;
+    Object.entries(ordersByAgent).forEach(([agentName, data]: [string, any]) => {
+      report += ESCPOSFormatter.textBold();
+      report += `${agentName}`;
+      report += ESCPOSFormatter.textBoldOff();
       report += ESCPOSFormatter.newLine();
-      report += `   Revenu: ${ESCPOSFormatter.formatCurrency(revenue.amount)}`;
+      report += `  Commandes: ${data.totalOrders}`;
+      report += ESCPOSFormatter.newLine();
+      report += `  Revenus: ${ESCPOSFormatter.formatCurrency(data.totalRevenue)}`;
+      report += ESCPOSFormatter.newLine();
+      report += `  Moyenne: ${(data.totalRevenue / data.totalOrders).toFixed(2)} MAD`;
       report += ESCPOSFormatter.newLine();
       report += ESCPOSFormatter.horizontalLine('-', 32);
       report += ESCPOSFormatter.newLine();
     });
   }
   
+  // Detailed orders section
+  if (filteredOrders.length > 0) {
+    report += ESCPOSFormatter.alignCenter();
+    report += ESCPOSFormatter.horizontalLine('=', 32);
+    report += ESCPOSFormatter.newLine();
+    report += ESCPOSFormatter.textBold();
+    report += "DÉTAIL DES COMMANDES";
+    report += ESCPOSFormatter.textBoldOff();
+    report += ESCPOSFormatter.newLine();
+    report += ESCPOSFormatter.horizontalLine('=', 32);
+    report += ESCPOSFormatter.newLine();
+    
+    report += ESCPOSFormatter.alignLeft();
+    
+    // Sort orders by date
+    const sortedOrders = [...filteredOrders].sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    
+    sortedOrders.forEach((order, index) => {
+      report += ESCPOSFormatter.textBold();
+      report += `COMMANDE #${index + 1}`;
+      report += ESCPOSFormatter.textBoldOff();
+      report += ESCPOSFormatter.newLine();
+      report += `Date: ${formatDateTime(order.date)}`;
+      report += ESCPOSFormatter.newLine();
+      report += `Agent: ${order.agentName}`;
+      report += ESCPOSFormatter.newLine();
+      report += `ID: ${order.id}`;
+      report += ESCPOSFormatter.newLine();
+      report += ESCPOSFormatter.horizontalLine('-', 32);
+      report += ESCPOSFormatter.newLine();
+      
+      // Order items
+      order.items.forEach((item: any) => {
+        const itemTotal = item.quantity * item.unitPrice;
+        report += `${item.quantity}x ${item.drinkName}`;
+        report += ESCPOSFormatter.newLine();
+        report += `   ${item.unitPrice.toFixed(2)} MAD x ${item.quantity} = ${itemTotal.toFixed(2)} MAD`;
+        report += ESCPOSFormatter.newLine();
+      });
+      
+      report += ESCPOSFormatter.horizontalLine('-', 32);
+      report += ESCPOSFormatter.newLine();
+      report += ESCPOSFormatter.textBold();
+      report += `TOTAL: ${ESCPOSFormatter.formatCurrency(order.total)}`;
+      report += ESCPOSFormatter.textBoldOff();
+      report += ESCPOSFormatter.multipleLines(2);
+    });
+  }
+  
   // Footer with additional line breaks
-  report += ESCPOSFormatter.multipleLines(2);
+  report += ESCPOSFormatter.multipleLines(1);
   report += ESCPOSFormatter.alignCenter();
   report += "Rapport généré automatiquement";
   report += ESCPOSFormatter.newLine();
   report += "par le système de gestion";
-  report += ESCPOSFormatter.multipleLines(6); // Added extra line breaks
+  report += ESCPOSFormatter.multipleLines(6);
   
   // Cut paper
   report += ESCPOSFormatter.cutPaper();
