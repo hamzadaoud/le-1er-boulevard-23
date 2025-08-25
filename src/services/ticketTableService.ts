@@ -1,132 +1,135 @@
-import { TableOrder } from '../types';
 
-// Générer un code-barres simple
-const generateBarcode = (orderId: string): string => {
-  const barcodeData = `|||| || |||| | || |||| || | |||| | || |||| |||| | || ||||`;
-  return `<div style="font-family: 'Courier New', monospace; font-size: 24px; letter-spacing: 1px; text-align: center; margin: 10px 0; transform: scaleX(0.5);">${barcodeData}</div>
-          <div style="font-size: 12px; text-align: center; color: #666; margin-bottom: 15px;">${orderId}</div>`;
-};
+import { TableOrder } from '../types';
+import { ESCPOSFormatter } from '../utils/escposUtils';
 
 export const printTableTicket = (order: TableOrder): void => {
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  // Document combiné: ticket client + copie agent (avec saut de page)
-  const combinedContent = `
-    <html>
-    <head>
-      <title>Tickets - 1er Boulevard</title>
-      <style>
-        @media print {
-          body { margin: 0 !important; }
-          .page-break { page-break-before: always; }
-        }
-        body {
-          font-family: 'Courier New', monospace;
-          margin: 0;
-          padding: 20px;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          min-height: 100vh;
-          background: white;
-          color: black;
-        }
-        /* Ticket client */
-        .ticket {
-          width: 320px;
-          border: 2px solid #000;
-          padding: 20px;
-          text-align: center;
-          margin-bottom: 30px;
-        }
-        .header { border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 12px; }
-        .cafe-name { font-size: 24px; font-weight: bold; color: #000; letter-spacing: 2px; }
-        .address { font-size: 14px; color: #000; }
-        .order-info { margin: 15px 0; padding: 10px; background: #f8f8f8; border: 1px solid #000; border-radius: 6px; }
-        .items { width: 100%; text-align: left; margin: 10px 0; }
-        .item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dotted #000; font-size: 16px; }
-        .total { border-top: 2px solid #000; padding-top: 10px; margin-top: 10px; font-size: 20px; font-weight: bold; color: #000; }
-        .barcode { text-align: center; margin: 12px 0; }
-        .barcode div:first-child { transform: scaleX(0.5); }
-        .date { font-size: 14px; color: #666; }
-        .footer { margin-top: 10px; padding-top: 10px; border-top: 1px solid #000; font-size: 14px; color: #000; }
-        
-        /* Copie agent */
-        .agent-ticket { width: 280px; border: 1px solid #000; padding: 15px; text-align: center; }
-        .agent-header { border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 10px; font-weight: bold; }
-        .agent-items { text-align: left; margin: 10px 0; }
-        .agent-item { padding: 5px 0; border-bottom: 1px dotted #999; font-size: 14px; }
-      </style>
-    </head>
-    <body>
-      <!-- Ticket client -->
-      <div class="ticket">
-        <div class="header">
-          <div class="cafe-name">1ER BOULEVARD</div>
-          <div class="address">GUELIZ</div>
-        </div>
-        <div class="order-info">
-          <div style="font-weight:bold;">TABLE ${order.tableNumber}</div>
-          <div class="date">${formatDate(order.date)}</div>
-          <div style="font-size: 14px; color: #666; margin-top: 5px;">Serveur: ${order.agentName}</div>
-        </div>
-        <div class="items">
-          ${order.items.map(item => `
-            <div class="item">
-              <div>
-                <div style="font-weight:bold;">${item.drinkName}</div>
-                <div class="date">${item.quantity} x ${item.unitPrice.toFixed(2)} MAD</div>
-              </div>
-              <div style="font-weight:bold; color:#000;">${(item.quantity * item.unitPrice).toFixed(2)} MAD</div>
-            </div>
-          `).join('')}
-        </div>
-        <div class="total">TOTAL: ${order.total.toFixed(2)} MAD</div>
-        <div class="barcode">${generateBarcode(order.id)}</div>
-        <div class="footer">Merci de votre visite !</div>
-      </div>
-
-      <!-- Saut de page -->
-      <div class="page-break"></div>
-
-      <!-- Copie Agent (articles uniquement) -->
-      <div class="agent-ticket">
-        <div class="agent-header">LE 1ER BOULEVARD — COPIE AGENT</div>
-        <div style="font-weight:bold; margin: 10px 0;">TABLE ${order.tableNumber}</div>
-        <div class="date">${formatDate(order.date)}</div>
-        <div style="font-size: 14px; color: #666; margin-top: 5px;">Agent: ${order.agentName}</div>
-        <div class="agent-items">
-          ${order.items.map(item => `
-            <div class="agent-item">${item.drinkName} — Qté: ${item.quantity}</div>
-          `).join('')}
-        </div>
-        <div class="barcode">${generateBarcode(order.id)}</div>
-      </div>
-    </body>
-    </html>
-  `;
-
-  const printWindow = window.open('', '_blank', 'width=800,height=1000');
-  if (printWindow) {
-    printWindow.document.write(combinedContent);
-    printWindow.document.close();
-    printWindow.onload = () => {
-      setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-        setTimeout(() => printWindow.close(), 600);
-      }, 300);
-    };
-  } else {
-    alert("Veuillez autoriser les fenêtres popup pour imprimer le ticket.");
-  }
+  // Generate customer ticket with ESC/POS commands
+  let customerTicket = ESCPOSFormatter.init();
+  customerTicket += ESCPOSFormatter.setCharacterSet();
+  customerTicket += ESCPOSFormatter.textNormal();
+  customerTicket += ESCPOSFormatter.alignCenter();
+  
+  // Header
+  customerTicket += ESCPOSFormatter.textLarge();
+  customerTicket += ESCPOSFormatter.textBold();
+  customerTicket += "1ER BOULEVARD";
+  customerTicket += ESCPOSFormatter.newLine();
+  customerTicket += ESCPOSFormatter.textNormal();
+  customerTicket += ESCPOSFormatter.textBoldOff();
+  customerTicket += "GUELIZ";
+  customerTicket += ESCPOSFormatter.multipleLines(2);
+  
+  // Table and date info
+  customerTicket += ESCPOSFormatter.alignCenter();
+  customerTicket += ESCPOSFormatter.textDoubleHeight();
+  customerTicket += ESCPOSFormatter.textBold();
+  customerTicket += `TABLE ${order.tableNumber}`;
+  customerTicket += ESCPOSFormatter.textNormal();
+  customerTicket += ESCPOSFormatter.textBoldOff();
+  customerTicket += ESCPOSFormatter.newLine();
+  
+  customerTicket += ESCPOSFormatter.alignLeft();
+  customerTicket += "Date: " + ESCPOSFormatter.formatDate(order.date);
+  customerTicket += ESCPOSFormatter.newLine();
+  customerTicket += "Serveur: " + order.agentName;
+  customerTicket += ESCPOSFormatter.multipleLines(2);
+  
+  // Separator line
+  customerTicket += ESCPOSFormatter.horizontalLine('=', 32);
+  customerTicket += ESCPOSFormatter.newLine();
+  customerTicket += ESCPOSFormatter.alignCenter();
+  customerTicket += ESCPOSFormatter.textBold();
+  customerTicket += "TICKET CLIENT";
+  customerTicket += ESCPOSFormatter.textBoldOff();
+  customerTicket += ESCPOSFormatter.newLine();
+  customerTicket += ESCPOSFormatter.horizontalLine('=', 32);
+  customerTicket += ESCPOSFormatter.newLine();
+  
+  // Items
+  customerTicket += ESCPOSFormatter.alignLeft();
+  order.items.forEach((item, index) => {
+    customerTicket += `${index + 1}. ${item.drinkName}`;
+    customerTicket += ESCPOSFormatter.newLine();
+    customerTicket += `   ${item.quantity} x ${ESCPOSFormatter.formatCurrency(item.unitPrice)}`;
+    customerTicket += ESCPOSFormatter.alignRight();
+    customerTicket += ESCPOSFormatter.formatCurrency(item.unitPrice * item.quantity);
+    customerTicket += ESCPOSFormatter.newLine();
+    customerTicket += ESCPOSFormatter.alignLeft();
+    customerTicket += ESCPOSFormatter.horizontalLine('-', 32);
+    customerTicket += ESCPOSFormatter.newLine();
+  });
+  
+  // Total
+  customerTicket += ESCPOSFormatter.alignCenter();
+  customerTicket += ESCPOSFormatter.textDoubleHeight();
+  customerTicket += ESCPOSFormatter.textBold();
+  customerTicket += "TOTAL: " + ESCPOSFormatter.formatCurrency(order.total);
+  customerTicket += ESCPOSFormatter.textNormal();
+  customerTicket += ESCPOSFormatter.textBoldOff();
+  customerTicket += ESCPOSFormatter.multipleLines(2);
+  
+  // Barcode
+  customerTicket += ESCPOSFormatter.alignCenter();
+  customerTicket += ESCPOSFormatter.generateBarcode(order.id);
+  customerTicket += ESCPOSFormatter.multipleLines(2);
+  
+  // Footer
+  customerTicket += ESCPOSFormatter.alignCenter();
+  customerTicket += "Merci de votre visite !";
+  customerTicket += ESCPOSFormatter.multipleLines(4);
+  
+  // Cut paper
+  customerTicket += ESCPOSFormatter.cutPaper();
+  
+  // Generate agent copy
+  let agentCopy = ESCPOSFormatter.init();
+  agentCopy += ESCPOSFormatter.setCharacterSet();
+  agentCopy += ESCPOSFormatter.alignCenter();
+  agentCopy += ESCPOSFormatter.textBold();
+  agentCopy += "LE 1ER BOULEVARD";
+  agentCopy += ESCPOSFormatter.newLine();
+  agentCopy += "COPIE AGENT";
+  agentCopy += ESCPOSFormatter.textBoldOff();
+  agentCopy += ESCPOSFormatter.multipleLines(2);
+  
+  // Table and agent info
+  agentCopy += ESCPOSFormatter.textDoubleHeight();
+  agentCopy += ESCPOSFormatter.textBold();
+  agentCopy += `TABLE ${order.tableNumber}`;
+  agentCopy += ESCPOSFormatter.textNormal();
+  agentCopy += ESCPOSFormatter.textBoldOff();
+  agentCopy += ESCPOSFormatter.newLine();
+  
+  agentCopy += ESCPOSFormatter.alignLeft();
+  agentCopy += "Date: " + ESCPOSFormatter.formatDate(order.date);
+  agentCopy += ESCPOSFormatter.newLine();
+  agentCopy += "Agent: " + order.agentName;
+  agentCopy += ESCPOSFormatter.multipleLines(2);
+  
+  // Products only
+  agentCopy += ESCPOSFormatter.alignCenter();
+  agentCopy += ESCPOSFormatter.textBold();
+  agentCopy += "ARTICLES:";
+  agentCopy += ESCPOSFormatter.textBoldOff();
+  agentCopy += ESCPOSFormatter.newLine();
+  agentCopy += ESCPOSFormatter.horizontalLine('-', 32);
+  agentCopy += ESCPOSFormatter.newLine();
+  
+  agentCopy += ESCPOSFormatter.alignLeft();
+  order.items.forEach((item, index) => {
+    agentCopy += `${index + 1}. ${item.drinkName} - Qte: ${item.quantity}`;
+    agentCopy += ESCPOSFormatter.newLine();
+  });
+  
+  agentCopy += ESCPOSFormatter.multipleLines(2);
+  agentCopy += ESCPOSFormatter.alignCenter();
+  agentCopy += ESCPOSFormatter.generateBarcode(order.id);
+  agentCopy += ESCPOSFormatter.multipleLines(4);
+  agentCopy += ESCPOSFormatter.cutPaper();
+  
+  // Combine both tickets
+  const combinedTicket = customerTicket + agentCopy;
+  
+  // Send to thermal printer
+  ESCPOSFormatter.print(combinedTicket);
 };
