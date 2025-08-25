@@ -139,10 +139,12 @@ export class ESCPOSFormatter {
       }
     }
     
-    // Method 2: Try direct browser printing with cleaned content
+    // Method 2: Try direct browser printing with cleaned content (each call creates new window)
     try {
       const printFrame = document.createElement('iframe');
       printFrame.style.display = 'none';
+      printFrame.style.position = 'absolute';
+      printFrame.style.left = '-9999px';
       document.body.appendChild(printFrame);
       
       const printDocument = printFrame.contentDocument;
@@ -170,17 +172,44 @@ export class ESCPOSFormatter {
           
         printDocument.write(`
           <html>
-            <head><title>Print Ticket</title></head>
-            <body style="font-family: 'Courier New', monospace; white-space: pre-line; text-align: center; font-size: 12px;">${cleanContent}</body>
+            <head>
+              <title>Print Ticket</title>
+              <style>
+                @media print {
+                  body { margin: 0; padding: 0; }
+                  .ticket-content { page-break-after: always; }
+                }
+                body { 
+                  font-family: 'Courier New', monospace; 
+                  white-space: pre-line; 
+                  text-align: center; 
+                  font-size: 12px;
+                  margin: 0;
+                  padding: 20px;
+                }
+                .ticket-content {
+                  width: 100%;
+                  max-width: 300px;
+                  margin: 0 auto;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="ticket-content">${cleanContent}</div>
+            </body>
           </html>
         `);
         printDocument.close();
         
-        printFrame.contentWindow?.print();
-        
+        // Wait a moment for content to load, then print and remove
         setTimeout(() => {
-          document.body.removeChild(printFrame);
-        }, 1000);
+          printFrame.contentWindow?.print();
+          setTimeout(() => {
+            if (document.body.contains(printFrame)) {
+              document.body.removeChild(printFrame);
+            }
+          }, 1000);
+        }, 100);
         
         console.log('Ticket sent to printer via browser print');
         return;
@@ -215,8 +244,10 @@ export class ESCPOSFormatter {
       .replace(/\r/g, '') // Remove carriage returns
       .trim();
 
-    // Create print window
-    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    // Create unique window name to ensure separate windows
+    const windowName = `ticket_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const printWindow = window.open('', windowName, 'width=400,height=600,scrollbars=yes,resizable=yes');
+    
     if (printWindow) {
       printWindow.document.write(`
         <html>
@@ -235,6 +266,9 @@ export class ESCPOSFormatter {
               text-align: center;
               font-family: 'Courier New', monospace;
               font-size: 12px;
+              width: 100%;
+              max-width: 300px;
+              margin: 0 auto;
             }
             .print-btn {
               background: #28a745;
@@ -268,11 +302,11 @@ export class ESCPOSFormatter {
       `);
       printWindow.document.close();
       
-      // Auto-focus and trigger print dialog
+      // Auto-focus and trigger print dialog after a short delay
       setTimeout(() => {
         printWindow.focus();
         printWindow.print();
-      }, 500);
+      }, 300);
     }
   }
 }
