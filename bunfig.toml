@@ -1,6 +1,7 @@
 
 [install]
 # Force registry usage and disable git dependencies
+registry = "https://registry.npmjs.org/"
 optional = false
 exact = true
 cache = false
@@ -8,13 +9,6 @@ git = false
 
 [install.scopes]
 "@electron" = { registry = "https://registry.npmjs.org/" }
-
-# Electron specific configuration
-electron_rebuild = false
-
-# Force all packages to use registry
-[install.registry]
-url = "https://registry.npmjs.org/"
 
 # Disable git protocol entirely
 [install.git]
