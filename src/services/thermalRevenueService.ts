@@ -1,3 +1,4 @@
+
 import { ESCPOSFormatter } from '../utils/escposUtils';
 
 export const printThermalRevenueReport = (
@@ -110,17 +111,17 @@ export const printThermalRevenueReport = (
     });
   }
   
-  // Footer
+  // Footer with additional line breaks
   report += ESCPOSFormatter.multipleLines(2);
   report += ESCPOSFormatter.alignCenter();
   report += "Rapport généré automatiquement";
   report += ESCPOSFormatter.newLine();
   report += "par le système de gestion";
-  report += ESCPOSFormatter.multipleLines(4);
+  report += ESCPOSFormatter.multipleLines(6); // Added extra line breaks
   
   // Cut paper
   report += ESCPOSFormatter.cutPaper();
   
-  // Print the report
+  // Print the report using thermal printer
   ESCPOSFormatter.print(report);
 };

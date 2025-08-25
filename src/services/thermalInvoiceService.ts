@@ -1,3 +1,4 @@
+
 import { ESCPOSFormatter } from '../utils/escposUtils';
 import { Order } from '../types';
 
@@ -77,16 +78,16 @@ export const printThermalInvoice = (order: Order): void => {
   invoice += ESCPOSFormatter.generateBarcode(order.id);
   invoice += ESCPOSFormatter.multipleLines(2);
   
-  // Footer
+  // Footer with additional line breaks
   invoice += ESCPOSFormatter.alignCenter();
   invoice += "Merci de votre confiance !";
-  invoice += ESCPOSFormatter.newLine();
+  invoice += ESCPOSFormatter.multipleLines(2);
   invoice += "À bientôt chez La Perle Rouge !";
-  invoice += ESCPOSFormatter.multipleLines(4);
+  invoice += ESCPOSFormatter.multipleLines(6); // Added extra line breaks
   
   // Cut paper
   invoice += ESCPOSFormatter.cutPaper();
   
-  // Print the invoice
+  // Print the invoice using thermal printer
   ESCPOSFormatter.print(invoice);
 };

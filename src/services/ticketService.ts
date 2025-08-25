@@ -81,17 +81,17 @@ export const printTicket = (order: Order): void => {
   customerTicket += thankYouMessage.substring(0, 100); // Limit message length
   customerTicket += ESCPOSFormatter.multipleLines(2);
   
-  // Footer
+  // Footer with additional line breaks
   customerTicket += ESCPOSFormatter.alignCenter();
   customerTicket += "Merci de votre visite!";
-  customerTicket += ESCPOSFormatter.newLine();
+  customerTicket += ESCPOSFormatter.multipleLines(3); // Added extra line breaks
   customerTicket += "DOHA ABOUAB MARRAKECH";
   customerTicket += ESCPOSFormatter.multipleLines(4);
   
   // Cut paper
   customerTicket += ESCPOSFormatter.cutPaper();
   
-  // Generate agent copy
+  // Generate agent copy with additional line breaks
   let agentCopy = ESCPOSFormatter.init();
   agentCopy += ESCPOSFormatter.setCharacterSet();
   agentCopy += ESCPOSFormatter.alignCenter();
@@ -124,7 +124,7 @@ export const printTicket = (order: Order): void => {
     agentCopy += ESCPOSFormatter.newLine();
   });
   
-  agentCopy += ESCPOSFormatter.multipleLines(2);
+  agentCopy += ESCPOSFormatter.multipleLines(4); // Added extra line breaks for agent copy
   agentCopy += ESCPOSFormatter.alignCenter();
   agentCopy += ESCPOSFormatter.generateBarcode(order.id);
   agentCopy += ESCPOSFormatter.multipleLines(4);

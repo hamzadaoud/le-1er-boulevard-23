@@ -6,6 +6,9 @@ export class ESCPOSFormatter {
   static readonly LF = '\n';
   static readonly CR = '\r';
   
+  // Store the selected serial port to avoid repeated prompts
+  private static selectedPort: any = null;
+  
   // Initialize printer
   static init(): string {
     return this.ESC + '@'; // Initialize printer
@@ -137,22 +140,29 @@ export class ESCPOSFormatter {
     // Method 1: Try Web Serial API for direct USB connection to thermal printer
     if ('serial' in navigator) {
       try {
-        const port = await (navigator as any).serial.requestPort();
-        await port.open({ baudRate: 9600 });
+        // Use stored port if available, otherwise request new port
+        if (!this.selectedPort) {
+          this.selectedPort = await (navigator as any).serial.requestPort();
+        }
         
-        const writer = port.writable.getWriter();
+        // Check if port is already open, if not open it
+        if (!this.selectedPort.readable) {
+          await this.selectedPort.open({ baudRate: 9600 });
+        }
+        
+        const writer = this.selectedPort.writable.getWriter();
         const encoder = new TextEncoder();
         
         // Send raw ESC/POS content WITH cut commands for thermal printer
-        // This ensures RONGTA RP330 will automatically cut the paper
         await writer.write(encoder.encode(content));
         await writer.close();
-        await port.close();
         
         console.log('Ticket printed successfully via Serial API with automatic paper cut');
         return;
       } catch (error) {
         console.warn('Serial printing failed:', error);
+        // Reset port on error so user can select a different one next time
+        this.selectedPort = null;
         throw error;
       }
     }

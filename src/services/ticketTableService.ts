@@ -70,15 +70,15 @@ export const printTableTicket = (order: TableOrder): void => {
   customerTicket += ESCPOSFormatter.generateBarcode(order.id);
   customerTicket += ESCPOSFormatter.multipleLines(2);
   
-  // Footer
+  // Footer with additional line breaks
   customerTicket += ESCPOSFormatter.alignCenter();
   customerTicket += "Merci de votre visite !";
-  customerTicket += ESCPOSFormatter.multipleLines(4);
+  customerTicket += ESCPOSFormatter.multipleLines(6); // Added extra line breaks
   
   // Cut paper
   customerTicket += ESCPOSFormatter.cutPaper();
   
-  // Generate agent copy
+  // Generate agent copy with additional line breaks
   let agentCopy = ESCPOSFormatter.init();
   agentCopy += ESCPOSFormatter.setCharacterSet();
   agentCopy += ESCPOSFormatter.alignCenter();
@@ -119,7 +119,7 @@ export const printTableTicket = (order: TableOrder): void => {
     agentCopy += ESCPOSFormatter.newLine();
   });
   
-  agentCopy += ESCPOSFormatter.multipleLines(2);
+  agentCopy += ESCPOSFormatter.multipleLines(4); // Added extra line breaks for agent copy
   agentCopy += ESCPOSFormatter.alignCenter();
   agentCopy += ESCPOSFormatter.generateBarcode(order.id);
   agentCopy += ESCPOSFormatter.multipleLines(4);
