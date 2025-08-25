@@ -1,12 +1,9 @@
 
 [install]
 registry = "https://registry.npmjs.org/"
-optional = false
+optional = true
 exact = true
 cache = false
-
-[install.scopes]
-"@electron" = { registry = "https://registry.npmjs.org/" }
 
 [install.git]
 enabled = false
