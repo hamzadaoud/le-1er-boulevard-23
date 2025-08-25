@@ -145,6 +145,8 @@ export class ESCPOSFormatter {
       printFrame.style.display = 'none';
       printFrame.style.position = 'absolute';
       printFrame.style.left = '-9999px';
+      // Add unique ID to ensure separate frames
+      printFrame.id = `print-frame-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       document.body.appendChild(printFrame);
       
       const printDocument = printFrame.contentDocument;
@@ -177,7 +179,7 @@ export class ESCPOSFormatter {
               <style>
                 @media print {
                   body { margin: 0; padding: 0; }
-                  .ticket-content { page-break-after: always; }
+                  .ticket-content { page-break-after: avoid; }
                 }
                 body { 
                   font-family: 'Courier New', monospace; 
