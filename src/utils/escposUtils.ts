@@ -112,48 +112,68 @@ export class ESCPOSFormatter {
     });
   }
   
-  // Print and return to thermal printer
+  // Print directly to thermal printer
   static print(content: string): void {
-    // Create a blob with the ESC/POS content
-    const blob = new Blob([content], { type: 'application/octet-stream' });
-    
-    // Try to print using Web Serial API (for direct USB connection)
+    // Try direct printing methods in order of preference
+    this.printDirectly(content);
+  }
+  
+  private static async printDirectly(content: string): Promise<void> {
+    // Method 1: Try Web Serial API for direct USB connection
     if ('serial' in navigator) {
-      this.printViaSerial(content);
-    } else {
-      // Fallback: create downloadable file for manual printing
-      this.downloadForPrinting(blob, content);
+      try {
+        const port = await (navigator as any).serial.requestPort();
+        await port.open({ baudRate: 9600 });
+        
+        const writer = port.writable.getWriter();
+        const encoder = new TextEncoder();
+        
+        await writer.write(encoder.encode(content));
+        await writer.close();
+        await port.close();
+        
+        console.log('Ticket printed successfully via Serial API');
+        return;
+      } catch (error) {
+        console.warn('Serial printing failed:', error);
+      }
     }
-  }
-  
-  private static async printViaSerial(content: string): Promise<void> {
-    try {
-      // Request serial port access
-      const port = await (navigator as any).serial.requestPort();
-      await port.open({ baudRate: 9600 });
-      
-      const writer = port.writable.getWriter();
-      const encoder = new TextEncoder();
-      
-      await writer.write(encoder.encode(content));
-      await writer.close();
-      await port.close();
-    } catch (error) {
-      console.error('Serial printing failed:', error);
-      // Fallback to download method
-      const blob = new Blob([content], { type: 'application/octet-stream' });
-      this.downloadForPrinting(blob, content);
-    }
-  }
-  
-  private static downloadForPrinting(blob: Blob, content: string): void {
-    // Create download link for ESC/POS file
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `ticket_${Date.now()}.txt`;
     
-    // Create clean preview content by removing ESC/POS commands
+    // Method 2: Try direct browser printing with ESC/POS commands
+    try {
+      const printFrame = document.createElement('iframe');
+      printFrame.style.display = 'none';
+      document.body.appendChild(printFrame);
+      
+      const printDocument = printFrame.contentDocument;
+      if (printDocument) {
+        printDocument.write(`
+          <html>
+            <head><title>Print Ticket</title></head>
+            <body style="font-family: monospace; white-space: pre;">${content}</body>
+          </html>
+        `);
+        printDocument.close();
+        
+        printFrame.contentWindow?.print();
+        
+        setTimeout(() => {
+          document.body.removeChild(printFrame);
+        }, 1000);
+        
+        console.log('Ticket sent to printer via browser print');
+        return;
+      }
+    } catch (error) {
+      console.warn('Browser printing failed:', error);
+    }
+    
+    // Method 3: Fallback - show print dialog with cleaned content
+    this.showPrintDialog(content);
+  }
+  
+  private static showPrintDialog(content: string): void {
+    // Clean content for display
     const cleanContent = content
       .replace(/\x1b@/g, '') // Remove init
       .replace(/\x1bR0/g, '') // Remove character set
@@ -168,62 +188,61 @@ export class ESCPOSFormatter {
       .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up excessive line breaks
       .trim();
 
-    // Show clean preview window
-    const previewWindow = window.open('', '_blank', 'width=400,height=600');
-    if (previewWindow) {
-      previewWindow.document.write(`
+    // Create print window
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    if (printWindow) {
+      printWindow.document.write(`
         <html>
         <head>
-          <title>Aperçu Ticket</title>
+          <title>Imprimer Ticket</title>
           <style>
             body { 
               font-family: 'Courier New', monospace; 
               font-size: 12px; 
               line-height: 1.4;
-              margin: 20px;
-              background: #f5f5f5;
-            }
-            .thermal-preview {
-              background: white;
+              margin: 0;
               padding: 20px;
-              border: 1px solid #ddd;
-              border-radius: 8px;
-              width: 300px;
-              margin: 0 auto;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+            .ticket-content {
               white-space: pre-line;
               text-align: center;
             }
-            .download-btn {
-              background: #007bff;
+            .print-btn {
+              background: #28a745;
               color: white;
               border: none;
-              padding: 10px 20px;
+              padding: 12px 24px;
               border-radius: 4px;
               cursor: pointer;
-              margin: 10px;
+              margin: 20px 10px;
+              font-size: 14px;
             }
-            .download-btn:hover {
-              background: #0056b3;
+            .print-btn:hover {
+              background: #218838;
+            }
+            @media print {
+              .no-print { display: none; }
+              .ticket-content { margin: 0; padding: 0; }
             }
           </style>
         </head>
         <body>
-          <div style="text-align: center; margin-bottom: 20px;">
-            <h3>Aperçu du Ticket</h3>
-            <button class="download-btn" onclick="document.getElementById('downloadLink').click()">Télécharger le fichier d'impression</button>
-            <a id="downloadLink" href="${url}" download="ticket_${Date.now()}.txt" style="display: none;"></a>
+          <div class="no-print" style="text-align: center; margin-bottom: 20px;">
+            <h3>Ticket prêt à imprimer</h3>
+            <button class="print-btn" onclick="window.print()">🖨️ Imprimer</button>
+            <button class="print-btn" onclick="window.close()" style="background: #6c757d;">Fermer</button>
           </div>
-          <div class="thermal-preview">${cleanContent}</div>
+          <div class="ticket-content">${cleanContent}</div>
         </body>
         </html>
       `);
+      printWindow.document.close();
+      
+      // Auto-focus and trigger print dialog
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+      }, 500);
     }
-    
-    // Auto-download the ESC/POS file
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   }
 }
