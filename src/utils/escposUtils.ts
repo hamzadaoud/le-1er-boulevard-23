@@ -117,6 +117,11 @@ export class ESCPOSFormatter {
     // Try direct printing methods in order of preference
     this.printDirectly(content);
   }
+
+  // Print both tickets in the same window
+  static printBothTickets(clientTicket: string, agentTicket: string): void {
+    this.showBothTicketsDialog(clientTicket, agentTicket);
+  }
   
   private static async printDirectly(content: string): Promise<void> {
     // Method 1: Try Web Serial API for direct USB connection
@@ -224,6 +229,155 @@ export class ESCPOSFormatter {
     this.showPrintDialog(content);
   }
   
+  private static showBothTicketsDialog(clientTicket: string, agentTicket: string): void {
+    // Clean both tickets
+    const cleanClientTicket = this.cleanContent(clientTicket);
+    const cleanAgentTicket = this.cleanContent(agentTicket);
+
+    // Create unique window name
+    const windowName = `tickets_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const printWindow = window.open('', windowName, 'width=500,height=800,scrollbars=yes,resizable=yes');
+    
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+        <head>
+          <title>Imprimer Tickets</title>
+          <style>
+            body { 
+              font-family: 'Courier New', monospace; 
+              font-size: 12px; 
+              line-height: 1.4;
+              margin: 0;
+              padding: 20px;
+              background: #f5f5f5;
+            }
+            .tickets-container {
+              display: flex;
+              flex-direction: column;
+              gap: 30px;
+              align-items: center;
+            }
+            .ticket-section {
+              background: white;
+              border: 2px solid #ddd;
+              border-radius: 8px;
+              padding: 20px;
+              width: 100%;
+              max-width: 350px;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+            .ticket-header {
+              background: #28a745;
+              color: white;
+              padding: 10px;
+              margin: -20px -20px 20px -20px;
+              border-radius: 6px 6px 0 0;
+              text-align: center;
+              font-weight: bold;
+              font-size: 14px;
+            }
+            .ticket-content {
+              white-space: pre-line;
+              text-align: center;
+              font-family: 'Courier New', monospace;
+              font-size: 11px;
+              line-height: 1.3;
+            }
+            .print-btn {
+              background: #28a745;
+              color: white;
+              border: none;
+              padding: 12px 24px;
+              border-radius: 4px;
+              cursor: pointer;
+              margin: 20px 10px;
+              font-size: 14px;
+            }
+            .print-btn:hover {
+              background: #218838;
+            }
+            .print-controls {
+              text-align: center;
+              margin-bottom: 30px;
+              background: white;
+              padding: 20px;
+              border-radius: 8px;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+            @media print {
+              body { background: white; }
+              .no-print { display: none; }
+              .tickets-container { gap: 50px; }
+              .ticket-section { 
+                margin: 0; 
+                padding: 20px; 
+                box-shadow: none;
+                border: 1px solid #000;
+                page-break-inside: avoid;
+              }
+              .ticket-header {
+                background: #000 !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="no-print print-controls">
+            <h3>Tickets prêts à imprimer</h3>
+            <button class="print-btn" onclick="window.print()">🖨️ Imprimer les deux tickets</button>
+            <button class="print-btn" onclick="window.close()" style="background: #6c757d;">Fermer</button>
+          </div>
+          
+          <div class="tickets-container">
+            <div class="ticket-section">
+              <div class="ticket-header">TICKET CLIENT</div>
+              <div class="ticket-content">${cleanClientTicket}</div>
+            </div>
+            
+            <div class="ticket-section">
+              <div class="ticket-header">COPIE AGENT</div>
+              <div class="ticket-content">${cleanAgentTicket}</div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+      
+      // Auto-focus and trigger print dialog after a short delay
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+      }, 500);
+    }
+  }
+
+  private static cleanContent(content: string): string {
+    return content
+      .replace(/\x1b@/g, '') // Remove init
+      .replace(/\x1bR0/g, '') // Remove character set
+      .replace(/\x1b![0-9\x00-\x30]/g, '') // Remove text size commands
+      .replace(/\x1bE[01]/g, '') // Remove bold commands
+      .replace(/\x1ba[0-2]/g, '') // Remove alignment commands
+      .replace(/\x1b3./g, '') // Remove line spacing
+      .replace(/\x1d[hHwVk]./g, '') // Remove barcode and cut commands
+      .replace(/\x1dV[01]/g, '') // Remove cut commands
+      .replace(/\x1dh[\x00-\xFF]*?\x1dk[\x00-\xFF]*?/g, '') // Remove complete barcode sequences
+      .replace(/\x1dh.+/g, '') // Remove barcode height commands
+      .replace(/\x1dw.+/g, '') // Remove barcode width commands  
+      .replace(/\x1dH[0-9]/g, '') // Remove HRI position commands
+      .replace(/\x1dk[\x00-\xFF]+/g, '') // Remove barcode data commands
+      .replace(/[\x00-\x08\x0B-\x1F\x7F]/g, '') // Remove all control characters except \t and \n
+      .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up excessive line breaks
+      .replace(/^\s+|\s+$/g, '') // Trim whitespace
+      .replace(/\r/g, '') // Remove carriage returns
+      .trim();
+  }
+
   private static showPrintDialog(content: string): void {
     // Comprehensive cleaning of ESC/POS commands
     const cleanContent = content

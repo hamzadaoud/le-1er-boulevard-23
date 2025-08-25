@@ -125,11 +125,6 @@ export const printTableTicket = (order: TableOrder): void => {
   agentCopy += ESCPOSFormatter.multipleLines(4);
   agentCopy += ESCPOSFormatter.cutPaper();
   
-  // Print customer ticket first (will be physically cut)
-  ESCPOSFormatter.print(customerTicket);
-  
-  // Print agent copy separately after delay (physically separated)
-  setTimeout(() => {
-    ESCPOSFormatter.print(agentCopy);
-  }, 2000);
+  // Print both tickets in the same window
+  ESCPOSFormatter.printBothTickets(customerTicket, agentCopy);
 };
