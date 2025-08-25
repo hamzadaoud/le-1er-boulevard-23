@@ -1,12 +1,14 @@
 
+import type { ElectronAPI } from '../types/electron';
+
 // Utility functions for Electron environment detection and API access
 export const isElectron = (): boolean => {
   return typeof window !== 'undefined' && window.electronAPI !== undefined;
 };
 
-export const getElectronAPI = () => {
+export const getElectronAPI = (): ElectronAPI | null => {
   if (isElectron()) {
-    return (window as any).electronAPI;
+    return window.electronAPI!;
   }
   return null;
 };
