@@ -1,0 +1,12 @@
+
+[install]
+# Skip problematic git dependencies
+optional = false
+exact = true
+cache = false
+
+[install.scopes]
+"@electron" = { registry = "https://registry.npmjs.org/" }
+
+# Electron specific configuration
+electron_rebuild = false
