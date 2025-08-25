@@ -28,16 +28,16 @@ export const printTableTicket = (order: TableOrder): void => {
   customerTicket += ESCPOSFormatter.textBoldOff();
   customerTicket += ESCPOSFormatter.newLine();
   
-  customerTicket += ESCPOSFormatter.alignLeft();
+  customerTicket += ESCPOSFormatter.alignCenter();
   customerTicket += "Date: " + ESCPOSFormatter.formatDate(order.date);
   customerTicket += ESCPOSFormatter.newLine();
   customerTicket += "Serveur: " + order.agentName;
   customerTicket += ESCPOSFormatter.multipleLines(2);
   
   // Separator line
+  customerTicket += ESCPOSFormatter.alignCenter();
   customerTicket += ESCPOSFormatter.horizontalLine('=', 32);
   customerTicket += ESCPOSFormatter.newLine();
-  customerTicket += ESCPOSFormatter.alignCenter();
   customerTicket += ESCPOSFormatter.textBold();
   customerTicket += "TICKET CLIENT";
   customerTicket += ESCPOSFormatter.textBoldOff();
@@ -46,15 +46,12 @@ export const printTableTicket = (order: TableOrder): void => {
   customerTicket += ESCPOSFormatter.newLine();
   
   // Items
-  customerTicket += ESCPOSFormatter.alignLeft();
+  customerTicket += ESCPOSFormatter.alignCenter();
   order.items.forEach((item, index) => {
     customerTicket += `${index + 1}. ${item.drinkName}`;
     customerTicket += ESCPOSFormatter.newLine();
-    customerTicket += `   ${item.quantity} x ${ESCPOSFormatter.formatCurrency(item.unitPrice)}`;
-    customerTicket += ESCPOSFormatter.alignRight();
-    customerTicket += ESCPOSFormatter.formatCurrency(item.unitPrice * item.quantity);
+    customerTicket += `${item.quantity} x ${ESCPOSFormatter.formatCurrency(item.unitPrice)} = ${ESCPOSFormatter.formatCurrency(item.unitPrice * item.quantity)}`;
     customerTicket += ESCPOSFormatter.newLine();
-    customerTicket += ESCPOSFormatter.alignLeft();
     customerTicket += ESCPOSFormatter.horizontalLine('-', 32);
     customerTicket += ESCPOSFormatter.newLine();
   });
@@ -93,6 +90,7 @@ export const printTableTicket = (order: TableOrder): void => {
   agentCopy += ESCPOSFormatter.multipleLines(2);
   
   // Table and agent info
+  agentCopy += ESCPOSFormatter.alignCenter();
   agentCopy += ESCPOSFormatter.textDoubleHeight();
   agentCopy += ESCPOSFormatter.textBold();
   agentCopy += `TABLE ${order.tableNumber}`;
@@ -100,7 +98,7 @@ export const printTableTicket = (order: TableOrder): void => {
   agentCopy += ESCPOSFormatter.textBoldOff();
   agentCopy += ESCPOSFormatter.newLine();
   
-  agentCopy += ESCPOSFormatter.alignLeft();
+  agentCopy += ESCPOSFormatter.alignCenter();
   agentCopy += "Date: " + ESCPOSFormatter.formatDate(order.date);
   agentCopy += ESCPOSFormatter.newLine();
   agentCopy += "Agent: " + order.agentName;
@@ -115,7 +113,7 @@ export const printTableTicket = (order: TableOrder): void => {
   agentCopy += ESCPOSFormatter.horizontalLine('-', 32);
   agentCopy += ESCPOSFormatter.newLine();
   
-  agentCopy += ESCPOSFormatter.alignLeft();
+  agentCopy += ESCPOSFormatter.alignCenter();
   order.items.forEach((item, index) => {
     agentCopy += `${index + 1}. ${item.drinkName} - Qte: ${item.quantity}`;
     agentCopy += ESCPOSFormatter.newLine();
@@ -127,11 +125,11 @@ export const printTableTicket = (order: TableOrder): void => {
   agentCopy += ESCPOSFormatter.multipleLines(4);
   agentCopy += ESCPOSFormatter.cutPaper();
   
-  // Print customer ticket first
+  // Print customer ticket first (will be physically cut)
   ESCPOSFormatter.print(customerTicket);
   
-  // Print agent copy separately after a short delay
+  // Print agent copy separately after delay (physically separated)
   setTimeout(() => {
     ESCPOSFormatter.print(agentCopy);
-  }, 1000);
+  }, 2000);
 };
