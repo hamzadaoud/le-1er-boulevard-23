@@ -1,9 +1,9 @@
 
-# Le 1er Boulevard - Café Management System
+# La Perle Rouge - Café Management System
 
 ## 🏪 Project Overview
 
-Le 1er Boulevard is a comprehensive café management system built for **La Perle Rouge** café in Gueliz. This desktop application streamlines daily operations including order management, inventory tracking, staff time management, and revenue reporting with integrated thermal printer support.
+La Perle Rouge is a comprehensive café management web application built for **La Perle Rouge** café in Gueliz. This progressive web application streamlines daily operations including order management, inventory tracking, staff time management, and revenue reporting with integrated thermal printer support.
 
 ### Target Users
 - **Café Owners/Administrators**: Full system access, staff management, comprehensive reporting
@@ -19,10 +19,9 @@ Le 1er Boulevard is a comprehensive café management system built for **La Perle
 
 ## 🛠 Technology Stack
 
-### Frontend & Desktop
+### Frontend & Web Technologies
 - **React 18** - Modern UI framework with hooks and functional components
 - **TypeScript** - Type safety and enhanced developer experience
-- **Electron** - Cross-platform desktop application wrapper
 - **Vite** - Fast build tool and development server
 - **React Router** - Client-side routing and navigation
 
@@ -44,7 +43,6 @@ Le 1er Boulevard is a comprehensive café management system built for **La Perle
 ### Development Tools
 - **ESLint** - Code linting and quality assurance
 - **PostCSS** - CSS processing and optimization
-- **Electron Builder** - Application packaging and distribution
 
 ## ✅ Features & Progress
 
@@ -85,14 +83,16 @@ Le 1er Boulevard is a comprehensive café management system built for **La Perle
 - ⏳ **Cloud Synchronization** - Multi-device data consistency
 
 #### Enhanced Features
+- ⏳ **Progressive Web App** - Mobile-responsive offline capabilities
 - ⏳ **Advanced Analytics** - Profit margins, trend analysis, forecasting
 - ⏳ **Customer Management** - Loyalty programs and customer profiles
 - ⏳ **Inventory Alerts** - Low stock notifications and automatic ordering
 - ⏳ **Multi-location Support** - Franchise management capabilities
 
-#### Mobile & Web
-- ⏳ **Progressive Web App** - Mobile-responsive web interface
+#### Cloud & Mobile
+- ⏳ **Cloud Deployment** - Hosted solution with real-time sync
 - ⏳ **Mobile Companion App** - Staff scheduling and basic operations
+- ⏳ **Offline Mode** - Local data caching with sync when online
 
 ## 📁 Project Structure
 
@@ -119,6 +119,7 @@ src/
 - **Node.js** 20+ LTS
 - **npm** 10.8+
 - USB thermal printer (RONGTA RP330 series recommended)
+- Modern web browser with Web Serial API support (Chrome, Edge)
 
 ### Development Setup
 
@@ -136,15 +137,22 @@ npm run dev
 # Build for production
 npm run build
 
-# Package as Electron app
-npm run electron:build
+# Preview production build
+npm run preview
 ```
 
 ### Thermal Printer Setup
 1. Connect RONGTA RP330 via USB
 2. Ensure printer is powered and has paper loaded
-3. Grant Serial API permissions when prompted
+3. Grant Serial API permissions when prompted in browser
 4. Test printing from the application
+
+### Browser Compatibility
+- **Chrome/Chromium** 89+ (Recommended)
+- **Microsoft Edge** 89+
+- **Opera** 75+
+- **Firefox** - Limited support (no Web Serial API)
+- **Safari** - Limited support (no Web Serial API)
 
 ## 👥 Usage Guide
 
@@ -185,7 +193,7 @@ npm run electron:build
 - **Generic ESC/POS Compatible Printers**
 
 ### Communication Protocol
-- **Web Serial API** - Direct USB communication
+- **Web Serial API** - Direct USB communication through browser
 - **ESC/POS Commands** - Complete command set implementation
 - **Auto-reconnection** - Handles printer disconnections gracefully
 
@@ -198,20 +206,20 @@ npm run electron:build
 ## 🔮 Future Improvements
 
 ### Short Term (Next 3 months)
-- **Database Integration** - Replace localStorage with SQLite for better data management
+- **Progressive Web App** - Offline capabilities and mobile installation
+- **Database Integration** - Replace localStorage with cloud database
 - **Table Management** - Complete table ordering system implementation
 - **Enhanced Analytics** - Profit margin analysis and trend forecasting
-- **Backup & Restore** - Data export/import functionality
 
 ### Medium Term (3-6 months)
-- **Cloud Synchronization** - Multi-device data consistency
+- **Cloud Deployment** - Hosted solution with real-time synchronization
 - **Advanced Inventory** - Stock management with automatic reordering
 - **Customer Profiles** - Loyalty programs and purchase history
-- **Mobile PWA** - Responsive web application for mobile devices
+- **API Integration** - Third-party payment systems and delivery platforms
 
 ### Long Term (6+ months)
 - **Multi-location Support** - Franchise management capabilities
-- **API Integration** - Third-party payment systems and delivery platforms
+- **Mobile Native App** - iOS/Android applications
 - **AI Analytics** - Predictive analytics for inventory and staffing
 - **Advanced Reporting** - Custom report builder with export options
 
@@ -234,6 +242,26 @@ npm run electron:build
 - **Optimized Builds** - Vite for fast development and production builds
 - **Efficient Rendering** - Minimal re-renders with proper dependency arrays
 - **Local Storage Optimization** - Efficient data serialization and caching
+
+### PWA Features (Planned)
+- **Service Workers** - Offline functionality and caching
+- **Web App Manifest** - Native-like installation experience
+- **Background Sync** - Data synchronization when connection resumes
+- **Push Notifications** - Order alerts and system notifications
+
+## 🌐 Deployment
+
+### Web Hosting Options
+- **Netlify** - Static site hosting with CI/CD
+- **Vercel** - Optimized for React applications
+- **GitHub Pages** - Free hosting for open source projects
+- **Firebase Hosting** - Google Cloud integration
+
+### Production Considerations
+- **Environment Variables** - API keys and configuration
+- **HTTPS Required** - Web Serial API requires secure context
+- **Cross-Origin Policies** - Printer communication restrictions
+- **Browser Compatibility** - Feature detection and fallbacks
 
 ---
 

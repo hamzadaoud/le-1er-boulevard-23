@@ -29,9 +29,5 @@ export default defineConfig(({ mode }) => ({
         manualChunks: undefined
       }
     }
-  },
-  // Electron compatibility
-  define: {
-    global: 'globalThis',
   }
 }));

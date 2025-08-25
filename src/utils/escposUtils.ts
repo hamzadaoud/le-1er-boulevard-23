@@ -1,4 +1,5 @@
-// ESC/POS command utilities for thermal printers (RONGTA RP330 series)
+
+// ESC/POS command utilities for thermal printers - Web Serial API only
 export class ESCPOSFormatter {
   // ESC/POS control commands
   static readonly ESC = '\x1b';
@@ -8,14 +9,6 @@ export class ESCPOSFormatter {
   
   // Store the selected serial port to avoid repeated prompts
   private static selectedPort: any = null;
-
-  // Enable direct printing by default for Electron app
-  private static preferSerial: boolean = true;
-
-  // Optional: allow apps to enable/disable serial printing explicitly
-  static setPreferSerialPrinting(enable: boolean) {
-    this.preferSerial = enable;
-  }
   
   // Initialize printer
   static init(): string {
@@ -124,7 +117,7 @@ export class ESCPOSFormatter {
     });
   }
   
-  // Print directly to thermal printer - simplified for Electron
+  // Print directly to thermal printer using Web Serial API
   static print(content: string): void {
     this.printDirectly(content);
   }
@@ -138,11 +131,12 @@ export class ESCPOSFormatter {
       }, 2000);
     }).catch((error) => {
       console.error('Direct printing failed:', error);
+      this.fallbackPrint(clientTicket + '\n\n' + agentTicket);
     });
   }
   
   private static async printDirectly(content: string): Promise<void> {
-    // Direct printing for Electron - use Web Serial API or fallback to silent print
+    // Web Serial API printing
     if ('serial' in navigator) {
       try {
         // Auto-request port if none selected
@@ -170,30 +164,21 @@ export class ESCPOSFormatter {
         // Reset port on error
         this.selectedPort = null;
         
-        // Show error dialog in Electron if available
-        if (typeof window !== 'undefined' && (window as any).electronAPI) {
-          await (window as any).electronAPI.showErrorDialog(
-            'Erreur d\'impression', 
-            'Impossible de se connecter à l\'imprimante thermique. Vérifiez la connexion USB.'
-          );
-        }
+        // Show error dialog
+        alert('Erreur d\'impression: Impossible de se connecter à l\'imprimante thermique. Vérifiez la connexion USB.');
+        throw error;
       }
-    }
-    
-    // Fallback: Silent print using Electron's built-in printing
-    try {
-      this.printSilently(content);
-      console.log('Ticket sent to default printer via Electron');
-    } catch (error) {
-      console.error('Silent printing failed:', error);
+    } else {
+      console.warn('Web Serial API not supported in this browser');
+      this.fallbackPrint(content);
     }
   }
   
-  private static printSilently(content: string): void {
+  private static fallbackPrint(content: string): void {
     // Clean content for printing
     const cleanContent = this.cleanContentForBrowser(content);
     
-    // Create a hidden iframe for silent printing
+    // Create a hidden iframe for browser printing
     const iframe = document.createElement('iframe');
     iframe.style.position = 'absolute';
     iframe.style.top = '-1000px';
@@ -235,7 +220,7 @@ export class ESCPOSFormatter {
       `);
       iframeDoc.close();
       
-      // Print silently after content loads
+      // Print after content loads
       setTimeout(() => {
         if (iframe.contentWindow) {
           iframe.contentWindow.print();
