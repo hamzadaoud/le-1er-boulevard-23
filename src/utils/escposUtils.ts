@@ -163,6 +163,14 @@ export class ESCPOSFormatter {
         console.warn('Serial printing failed:', error);
         // Reset port on error so user can select a different one next time
         this.selectedPort = null;
+        
+        // Show error dialog in Electron
+        if (typeof window !== 'undefined' && (window as any).electronAPI) {
+          await (window as any).electronAPI.showErrorDialog(
+            'Erreur d\'impression', 
+            'Impossible de se connecter à l\'imprimante thermique. Vérifiez la connexion USB.'
+          );
+        }
         throw error;
       }
     }
