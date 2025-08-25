@@ -127,9 +127,11 @@ export const printTableTicket = (order: TableOrder): void => {
   agentCopy += ESCPOSFormatter.multipleLines(4);
   agentCopy += ESCPOSFormatter.cutPaper();
   
-  // Combine both tickets
-  const combinedTicket = customerTicket + agentCopy;
+  // Print customer ticket first
+  ESCPOSFormatter.print(customerTicket);
   
-  // Send to thermal printer
-  ESCPOSFormatter.print(combinedTicket);
+  // Print agent copy separately after a short delay
+  setTimeout(() => {
+    ESCPOSFormatter.print(agentCopy);
+  }, 1000);
 };
