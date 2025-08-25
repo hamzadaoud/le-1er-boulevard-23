@@ -139,7 +139,7 @@ export class ESCPOSFormatter {
       }
     }
     
-    // Method 2: Try direct browser printing with ESC/POS commands
+    // Method 2: Try direct browser printing with cleaned content
     try {
       const printFrame = document.createElement('iframe');
       printFrame.style.display = 'none';
@@ -147,10 +147,31 @@ export class ESCPOSFormatter {
       
       const printDocument = printFrame.contentDocument;
       if (printDocument) {
+        // Clean content for display
+        const cleanContent = content
+          .replace(/\x1b@/g, '') // Remove init
+          .replace(/\x1bR0/g, '') // Remove character set
+          .replace(/\x1b![0-9\x00-\x30]/g, '') // Remove text size commands
+          .replace(/\x1bE[01]/g, '') // Remove bold commands
+          .replace(/\x1ba[0-2]/g, '') // Remove alignment commands
+          .replace(/\x1b3./g, '') // Remove line spacing
+          .replace(/\x1d[hHwVk]./g, '') // Remove barcode and cut commands
+          .replace(/\x1dV[01]/g, '') // Remove cut commands
+          .replace(/\x1dh[\x00-\xFF]*?\x1dk[\x00-\xFF]*?/g, '') // Remove complete barcode sequences
+          .replace(/\x1dh.+/g, '') // Remove barcode height commands
+          .replace(/\x1dw.+/g, '') // Remove barcode width commands  
+          .replace(/\x1dH[0-9]/g, '') // Remove HRI position commands
+          .replace(/\x1dk[\x00-\xFF]+/g, '') // Remove barcode data commands
+          .replace(/[\x00-\x08\x0B-\x1F\x7F]/g, '') // Remove all control characters except \t and \n
+          .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up excessive line breaks
+          .replace(/^\s+|\s+$/g, '') // Trim whitespace
+          .replace(/\r/g, '') // Remove carriage returns
+          .trim();
+          
         printDocument.write(`
           <html>
             <head><title>Print Ticket</title></head>
-            <body style="font-family: monospace; white-space: pre;">${content}</body>
+            <body style="font-family: 'Courier New', monospace; white-space: pre-line; text-align: center; font-size: 12px;">${cleanContent}</body>
           </html>
         `);
         printDocument.close();
@@ -173,7 +194,7 @@ export class ESCPOSFormatter {
   }
   
   private static showPrintDialog(content: string): void {
-    // Clean content for display
+    // Comprehensive cleaning of ESC/POS commands
     const cleanContent = content
       .replace(/\x1b@/g, '') // Remove init
       .replace(/\x1bR0/g, '') // Remove character set
@@ -183,9 +204,15 @@ export class ESCPOSFormatter {
       .replace(/\x1b3./g, '') // Remove line spacing
       .replace(/\x1d[hHwVk]./g, '') // Remove barcode and cut commands
       .replace(/\x1dV[01]/g, '') // Remove cut commands
-      .replace(/\x1dh.+?\x1dk.+/g, '') // Remove complete barcode sequences
-      .replace(/[\x00-\x1f\x7f]/g, '') // Remove other control characters
+      .replace(/\x1dh[\x00-\xFF]*?\x1dk[\x00-\xFF]*?/g, '') // Remove complete barcode sequences
+      .replace(/\x1dh.+/g, '') // Remove barcode height commands
+      .replace(/\x1dw.+/g, '') // Remove barcode width commands  
+      .replace(/\x1dH[0-9]/g, '') // Remove HRI position commands
+      .replace(/\x1dk[\x00-\xFF]+/g, '') // Remove barcode data commands
+      .replace(/[\x00-\x08\x0B-\x1F\x7F]/g, '') // Remove all control characters except \t and \n
       .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up excessive line breaks
+      .replace(/^\s+|\s+$/g, '') // Trim whitespace
+      .replace(/\r/g, '') // Remove carriage returns
       .trim();
 
     // Create print window
@@ -206,6 +233,8 @@ export class ESCPOSFormatter {
             .ticket-content {
               white-space: pre-line;
               text-align: center;
+              font-family: 'Courier New', monospace;
+              font-size: 12px;
             }
             .print-btn {
               background: #28a745;
@@ -223,6 +252,7 @@ export class ESCPOSFormatter {
             @media print {
               .no-print { display: none; }
               .ticket-content { margin: 0; padding: 0; }
+              body { margin: 0; padding: 0; }
             }
           </style>
         </head>
