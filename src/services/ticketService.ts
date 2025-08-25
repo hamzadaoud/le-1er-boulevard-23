@@ -34,16 +34,16 @@ export const printTicket = (order: Order): void => {
   customerTicket += ESCPOSFormatter.multipleLines(2);
   
   // Date and server info
-  customerTicket += ESCPOSFormatter.alignLeft();
+  customerTicket += ESCPOSFormatter.alignCenter();
   customerTicket += "Date: " + ESCPOSFormatter.formatDate(order.date);
   customerTicket += ESCPOSFormatter.newLine();
   customerTicket += "Serveur: " + order.agentName;
   customerTicket += ESCPOSFormatter.multipleLines(2);
   
   // Separator line
+  customerTicket += ESCPOSFormatter.alignCenter();
   customerTicket += ESCPOSFormatter.horizontalLine('=', 32);
   customerTicket += ESCPOSFormatter.newLine();
-  customerTicket += ESCPOSFormatter.alignCenter();
   customerTicket += ESCPOSFormatter.textBold();
   customerTicket += "TICKET CLIENT";
   customerTicket += ESCPOSFormatter.textBoldOff();
@@ -52,15 +52,12 @@ export const printTicket = (order: Order): void => {
   customerTicket += ESCPOSFormatter.newLine();
   
   // Items
-  customerTicket += ESCPOSFormatter.alignLeft();
+  customerTicket += ESCPOSFormatter.alignCenter();
   order.items.forEach((item, index) => {
     customerTicket += `${index + 1}. ${item.drinkName}`;
     customerTicket += ESCPOSFormatter.newLine();
-    customerTicket += `   ${item.quantity} x ${ESCPOSFormatter.formatCurrency(item.unitPrice)}`;
-    customerTicket += ESCPOSFormatter.alignRight();
-    customerTicket += ESCPOSFormatter.formatCurrency(item.unitPrice * item.quantity);
+    customerTicket += `${item.quantity} x ${ESCPOSFormatter.formatCurrency(item.unitPrice)} = ${ESCPOSFormatter.formatCurrency(item.unitPrice * item.quantity)}`;
     customerTicket += ESCPOSFormatter.newLine();
-    customerTicket += ESCPOSFormatter.alignLeft();
     customerTicket += ESCPOSFormatter.horizontalLine('-', 32);
     customerTicket += ESCPOSFormatter.newLine();
   });
@@ -84,17 +81,17 @@ export const printTicket = (order: Order): void => {
   customerTicket += thankYouMessage.substring(0, 100); // Limit message length
   customerTicket += ESCPOSFormatter.multipleLines(2);
   
-  // Footer
+  // Footer with additional line breaks
   customerTicket += ESCPOSFormatter.alignCenter();
   customerTicket += "Merci de votre visite!";
-  customerTicket += ESCPOSFormatter.newLine();
+  customerTicket += ESCPOSFormatter.multipleLines(3); // Added extra line breaks
   customerTicket += "DOHA ABOUAB MARRAKECH";
   customerTicket += ESCPOSFormatter.multipleLines(4);
   
   // Cut paper
   customerTicket += ESCPOSFormatter.cutPaper();
   
-  // Generate agent copy
+  // Generate agent copy with additional line breaks
   let agentCopy = ESCPOSFormatter.init();
   agentCopy += ESCPOSFormatter.setCharacterSet();
   agentCopy += ESCPOSFormatter.alignCenter();
@@ -106,7 +103,7 @@ export const printTicket = (order: Order): void => {
   agentCopy += ESCPOSFormatter.multipleLines(2);
   
   // Agent info
-  agentCopy += ESCPOSFormatter.alignLeft();
+  agentCopy += ESCPOSFormatter.alignCenter();
   agentCopy += "Date: " + ESCPOSFormatter.formatDate(order.date);
   agentCopy += ESCPOSFormatter.newLine();
   agentCopy += "Agent: " + order.agentName;
@@ -115,27 +112,24 @@ export const printTicket = (order: Order): void => {
   // Products only
   agentCopy += ESCPOSFormatter.alignCenter();
   agentCopy += ESCPOSFormatter.textBold();
-  agentCopy += "PRODUITS:";
+  agentCopy += "ARTICLES:";
   agentCopy += ESCPOSFormatter.textBoldOff();
   agentCopy += ESCPOSFormatter.newLine();
   agentCopy += ESCPOSFormatter.horizontalLine('-', 32);
   agentCopy += ESCPOSFormatter.newLine();
   
-  agentCopy += ESCPOSFormatter.alignLeft();
+  agentCopy += ESCPOSFormatter.alignCenter();
   order.items.forEach((item, index) => {
-    agentCopy += `${index + 1}. ${item.drinkName} x${item.quantity}`;
+    agentCopy += `${index + 1}. ${item.drinkName} - Qte: ${item.quantity}`;
     agentCopy += ESCPOSFormatter.newLine();
   });
   
-  agentCopy += ESCPOSFormatter.multipleLines(2);
+  agentCopy += ESCPOSFormatter.multipleLines(4); // Added extra line breaks for agent copy
   agentCopy += ESCPOSFormatter.alignCenter();
   agentCopy += ESCPOSFormatter.generateBarcode(order.id);
   agentCopy += ESCPOSFormatter.multipleLines(4);
   agentCopy += ESCPOSFormatter.cutPaper();
   
-  // Combine both tickets
-  const combinedTicket = customerTicket + agentCopy;
-  
-  // Send to thermal printer
-  ESCPOSFormatter.print(combinedTicket);
+  // Print both tickets in the same window
+  ESCPOSFormatter.printBothTickets(customerTicket, agentCopy);
 };

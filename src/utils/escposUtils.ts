@@ -1,4 +1,3 @@
-
 // ESC/POS command utilities for thermal printers (RONGTA RP330 series)
 export class ESCPOSFormatter {
   // ESC/POS control commands
@@ -6,6 +5,17 @@ export class ESCPOSFormatter {
   static readonly GS = '\x1d';
   static readonly LF = '\n';
   static readonly CR = '\r';
+  
+  // Store the selected serial port to avoid repeated prompts
+  private static selectedPort: any = null;
+
+  // Enable direct printing by default for Electron app
+  private static preferSerial: boolean = true;
+
+  // Optional: allow apps to enable/disable serial printing explicitly
+  static setPreferSerialPrinting(enable: boolean) {
+    this.preferSerial = enable;
+  }
   
   // Initialize printer
   static init(): string {
@@ -63,13 +73,15 @@ export class ESCPOSFormatter {
     return this.ESC + '3' + String.fromCharCode(dots);
   }
   
-  // Paper cutting
+  // Paper cutting - RONGTA RP330 compatible commands
   static cutPaper(): string {
-    return this.GS + 'V1'; // Full cut
+    // Use GS V 1 for full cut - standard for RONGTA RP330 series
+    return this.GS + 'V' + String.fromCharCode(1);
   }
   
   static partialCut(): string {
-    return this.GS + 'V0'; // Partial cut
+    // Use GS V 0 for partial cut
+    return this.GS + 'V' + String.fromCharCode(0);
   }
   
   // Character encoding
@@ -112,90 +124,133 @@ export class ESCPOSFormatter {
     });
   }
   
-  // Print directly to thermal printer
+  // Print directly to thermal printer - simplified for Electron
   static print(content: string): void {
-    // Try direct printing methods in order of preference
     this.printDirectly(content);
+  }
+
+  // Print both tickets directly
+  static printBothTickets(clientTicket: string, agentTicket: string): void {
+    this.printDirectly(clientTicket).then(() => {
+      // Print agent ticket after a delay for physical separation
+      setTimeout(() => {
+        this.printDirectly(agentTicket);
+      }, 2000);
+    }).catch((error) => {
+      console.error('Direct printing failed:', error);
+    });
   }
   
   private static async printDirectly(content: string): Promise<void> {
-    // Method 1: Try Web Serial API for direct USB connection
+    // Direct printing for Electron - use Web Serial API or fallback to silent print
     if ('serial' in navigator) {
       try {
-        const port = await (navigator as any).serial.requestPort();
-        await port.open({ baudRate: 9600 });
+        // Auto-request port if none selected
+        if (!this.selectedPort) {
+          console.log('[ESCPOS] Requesting serial port for thermal printer...');
+          this.selectedPort = await (navigator as any).serial.requestPort();
+        }
         
-        const writer = port.writable.getWriter();
+        // Check if port is already open, if not open it
+        if (!this.selectedPort.readable) {
+          await this.selectedPort.open({ baudRate: 9600 });
+        }
+        
+        const writer = this.selectedPort.writable.getWriter();
         const encoder = new TextEncoder();
         
+        // Send raw ESC/POS content WITH cut commands for thermal printer
         await writer.write(encoder.encode(content));
         await writer.close();
-        await port.close();
         
-        console.log('Ticket printed successfully via Serial API');
+        console.log('Ticket printed successfully via Serial API with automatic paper cut');
         return;
       } catch (error) {
         console.warn('Serial printing failed:', error);
+        // Reset port on error
+        this.selectedPort = null;
+        
+        // Show error dialog in Electron if available
+        if (typeof window !== 'undefined' && (window as any).electronAPI) {
+          await (window as any).electronAPI.showErrorDialog(
+            'Erreur d\'impression', 
+            'Impossible de se connecter à l\'imprimante thermique. Vérifiez la connexion USB.'
+          );
+        }
       }
     }
     
-    // Method 2: Try direct browser printing with cleaned content
+    // Fallback: Silent print using Electron's built-in printing
     try {
-      const printFrame = document.createElement('iframe');
-      printFrame.style.display = 'none';
-      document.body.appendChild(printFrame);
-      
-      const printDocument = printFrame.contentDocument;
-      if (printDocument) {
-        // Clean content for display
-        const cleanContent = content
-          .replace(/\x1b@/g, '') // Remove init
-          .replace(/\x1bR0/g, '') // Remove character set
-          .replace(/\x1b![0-9\x00-\x30]/g, '') // Remove text size commands
-          .replace(/\x1bE[01]/g, '') // Remove bold commands
-          .replace(/\x1ba[0-2]/g, '') // Remove alignment commands
-          .replace(/\x1b3./g, '') // Remove line spacing
-          .replace(/\x1d[hHwVk]./g, '') // Remove barcode and cut commands
-          .replace(/\x1dV[01]/g, '') // Remove cut commands
-          .replace(/\x1dh[\x00-\xFF]*?\x1dk[\x00-\xFF]*?/g, '') // Remove complete barcode sequences
-          .replace(/\x1dh.+/g, '') // Remove barcode height commands
-          .replace(/\x1dw.+/g, '') // Remove barcode width commands  
-          .replace(/\x1dH[0-9]/g, '') // Remove HRI position commands
-          .replace(/\x1dk[\x00-\xFF]+/g, '') // Remove barcode data commands
-          .replace(/[\x00-\x08\x0B-\x1F\x7F]/g, '') // Remove all control characters except \t and \n
-          .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up excessive line breaks
-          .replace(/^\s+|\s+$/g, '') // Trim whitespace
-          .replace(/\r/g, '') // Remove carriage returns
-          .trim();
-          
-        printDocument.write(`
-          <html>
-            <head><title>Print Ticket</title></head>
-            <body style="font-family: 'Courier New', monospace; white-space: pre-line; text-align: center; font-size: 12px;">${cleanContent}</body>
-          </html>
-        `);
-        printDocument.close();
-        
-        printFrame.contentWindow?.print();
-        
-        setTimeout(() => {
-          document.body.removeChild(printFrame);
-        }, 1000);
-        
-        console.log('Ticket sent to printer via browser print');
-        return;
-      }
+      this.printSilently(content);
+      console.log('Ticket sent to default printer via Electron');
     } catch (error) {
-      console.warn('Browser printing failed:', error);
+      console.error('Silent printing failed:', error);
     }
-    
-    // Method 3: Fallback - show print dialog with cleaned content
-    this.showPrintDialog(content);
   }
   
-  private static showPrintDialog(content: string): void {
-    // Comprehensive cleaning of ESC/POS commands
-    const cleanContent = content
+  private static printSilently(content: string): void {
+    // Clean content for printing
+    const cleanContent = this.cleanContentForBrowser(content);
+    
+    // Create a hidden iframe for silent printing
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.top = '-1000px';
+    iframe.style.left = '-1000px';
+    iframe.style.width = '1px';
+    iframe.style.height = '1px';
+    document.body.appendChild(iframe);
+    
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (iframeDoc) {
+      iframeDoc.open();
+      iframeDoc.write(`
+        <html>
+        <head>
+          <title>Print</title>
+          <style>
+            @page { 
+              margin: 0; 
+              size: 80mm auto;
+            }
+            body { 
+              font-family: 'Courier New', monospace; 
+              font-size: 10px; 
+              line-height: 1.2;
+              margin: 0;
+              padding: 5mm;
+              width: 70mm;
+            }
+            .ticket-content {
+              white-space: pre-line;
+              text-align: center;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="ticket-content">${cleanContent}</div>
+        </body>
+        </html>
+      `);
+      iframeDoc.close();
+      
+      // Print silently after content loads
+      setTimeout(() => {
+        if (iframe.contentWindow) {
+          iframe.contentWindow.print();
+        }
+        // Remove iframe after printing
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 1000);
+      }, 100);
+    }
+  }
+
+  // Clean content for browser display only (removes ESC/POS commands)
+  private static cleanContentForBrowser(content: string): string {
+    return content
       .replace(/\x1b@/g, '') // Remove init
       .replace(/\x1bR0/g, '') // Remove character set
       .replace(/\x1b![0-9\x00-\x30]/g, '') // Remove text size commands
@@ -203,7 +258,7 @@ export class ESCPOSFormatter {
       .replace(/\x1ba[0-2]/g, '') // Remove alignment commands
       .replace(/\x1b3./g, '') // Remove line spacing
       .replace(/\x1d[hHwVk]./g, '') // Remove barcode and cut commands
-      .replace(/\x1dV[01]/g, '') // Remove cut commands
+      .replace(/\x1dV[\x00-\x01]/g, '') // Remove cut commands (GS V 0 and GS V 1)
       .replace(/\x1dh[\x00-\xFF]*?\x1dk[\x00-\xFF]*?/g, '') // Remove complete barcode sequences
       .replace(/\x1dh.+/g, '') // Remove barcode height commands
       .replace(/\x1dw.+/g, '') // Remove barcode width commands  
@@ -214,65 +269,5 @@ export class ESCPOSFormatter {
       .replace(/^\s+|\s+$/g, '') // Trim whitespace
       .replace(/\r/g, '') // Remove carriage returns
       .trim();
-
-    // Create print window
-    const printWindow = window.open('', '_blank', 'width=400,height=600');
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-        <head>
-          <title>Imprimer Ticket</title>
-          <style>
-            body { 
-              font-family: 'Courier New', monospace; 
-              font-size: 12px; 
-              line-height: 1.4;
-              margin: 0;
-              padding: 20px;
-            }
-            .ticket-content {
-              white-space: pre-line;
-              text-align: center;
-              font-family: 'Courier New', monospace;
-              font-size: 12px;
-            }
-            .print-btn {
-              background: #28a745;
-              color: white;
-              border: none;
-              padding: 12px 24px;
-              border-radius: 4px;
-              cursor: pointer;
-              margin: 20px 10px;
-              font-size: 14px;
-            }
-            .print-btn:hover {
-              background: #218838;
-            }
-            @media print {
-              .no-print { display: none; }
-              .ticket-content { margin: 0; padding: 0; }
-              body { margin: 0; padding: 0; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="no-print" style="text-align: center; margin-bottom: 20px;">
-            <h3>Ticket prêt à imprimer</h3>
-            <button class="print-btn" onclick="window.print()">🖨️ Imprimer</button>
-            <button class="print-btn" onclick="window.close()" style="background: #6c757d;">Fermer</button>
-          </div>
-          <div class="ticket-content">${cleanContent}</div>
-        </body>
-        </html>
-      `);
-      printWindow.document.close();
-      
-      // Auto-focus and trigger print dialog
-      setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-      }, 500);
-    }
   }
 }
