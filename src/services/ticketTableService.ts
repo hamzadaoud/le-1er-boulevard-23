@@ -50,19 +50,20 @@ export const printTableTicket = (order: TableOrder): void => {
   order.items.forEach((item, index) => {
     customerTicket += `${index + 1}. ${item.drinkName}`;
     customerTicket += ESCPOSFormatter.newLine();
-    const left = `   ${item.quantity} x ${ESCPOSFormatter.formatCurrency(item.unitPrice)}`;
-    const right = ESCPOSFormatter.formatCurrency(item.unitPrice * item.quantity);
-    customerTicket += ESCPOSFormatter.padLine(left, right);
+    customerTicket += `   ${item.quantity} x ${ESCPOSFormatter.formatCurrency(item.unitPrice)}`;
+    customerTicket += ESCPOSFormatter.alignRight();
+    customerTicket += ESCPOSFormatter.formatCurrency(item.unitPrice * item.quantity);
     customerTicket += ESCPOSFormatter.newLine();
+    customerTicket += ESCPOSFormatter.alignLeft();
     customerTicket += ESCPOSFormatter.horizontalLine('-', 32);
     customerTicket += ESCPOSFormatter.newLine();
   });
   
   // Total
-  customerTicket += ESCPOSFormatter.alignLeft();
+  customerTicket += ESCPOSFormatter.alignCenter();
   customerTicket += ESCPOSFormatter.textDoubleHeight();
   customerTicket += ESCPOSFormatter.textBold();
-  customerTicket += ESCPOSFormatter.padLine('TOTAL:', ESCPOSFormatter.formatCurrency(order.total));
+  customerTicket += "TOTAL: " + ESCPOSFormatter.formatCurrency(order.total);
   customerTicket += ESCPOSFormatter.textNormal();
   customerTicket += ESCPOSFormatter.textBoldOff();
   customerTicket += ESCPOSFormatter.multipleLines(2);
