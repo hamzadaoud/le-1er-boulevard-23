@@ -3,7 +3,8 @@ import React from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { User, Mail, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { printRevenueReport, getRevenues } from '../services/cafeService';
+import { getRevenues } from '../services/cafeService';
+import { printThermalRevenueReport } from '../services/thermalRevenueService';
 import { checkIsAdmin } from '../services/authService';
 
 const AgentsPage: React.FC = () => {
@@ -13,7 +14,7 @@ const AgentsPage: React.FC = () => {
     const todayRevenues = revenues.filter(r => r.date === today);
     const totalRevenue = todayRevenues.reduce((sum, r) => sum + r.amount, 0);
     
-    printRevenueReport(todayRevenues, 'day', today, today, totalRevenue);
+    printThermalRevenueReport(todayRevenues, 'day', today, today, totalRevenue);
   };
 
   // Données des agents (normalement à récupérer depuis une API/BDD)

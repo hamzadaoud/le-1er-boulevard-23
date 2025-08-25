@@ -2,7 +2,8 @@ import React from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { Printer, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { printRevenueReport, getRevenues } from '../services/cafeService';
+import { getRevenues } from '../services/cafeService';
+import { printThermalRevenueReport } from '../services/thermalRevenueService';
 
 const AgentReportsPage: React.FC = () => {
   const handlePrintDailyReport = () => {
@@ -11,7 +12,7 @@ const AgentReportsPage: React.FC = () => {
     const todayRevenues = revenues.filter(r => r.date === today);
     const totalRevenue = todayRevenues.reduce((sum, r) => sum + r.amount, 0);
     
-    printRevenueReport(todayRevenues, 'day', today, today, totalRevenue);
+    printThermalRevenueReport(todayRevenues, 'day', today, today, totalRevenue);
   };
 
   return (

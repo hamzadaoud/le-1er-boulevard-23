@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { User, UserRole } from '../types';
 import { getAllUsers, addUser, updateUser, deleteUser, changeUserPassword, checkIsAdmin } from '../services/authService';
-import { printRevenueReport, getRevenues } from '../services/cafeService';
+import { getRevenues } from '../services/cafeService';
+import { printThermalRevenueReport } from '../services/thermalRevenueService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -212,7 +213,7 @@ const AgentManagementPage: React.FC = () => {
     const todayRevenues = revenues.filter(r => r.date === today);
     const totalRevenue = todayRevenues.reduce((sum, r) => sum + r.amount, 0);
     
-    printRevenueReport(todayRevenues, 'day', today, today, totalRevenue);
+    printThermalRevenueReport(todayRevenues, 'day', today, today, totalRevenue);
   };
 
   if (!checkIsAdmin()) {

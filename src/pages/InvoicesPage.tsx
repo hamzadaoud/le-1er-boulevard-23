@@ -4,6 +4,7 @@ import DashboardLayout from '../components/DashboardLayout';
 import { getOrders } from '../services/cafeService';
 import { Printer } from 'lucide-react';
 import { Order } from '../types';
+import { printThermalInvoice } from '../services/thermalInvoiceService';
 
 const InvoicesPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -14,125 +15,7 @@ const InvoicesPage: React.FC = () => {
   }, []);
   
   const printInvoice = (order: Order) => {
-    // Dans une vraie application, cette fonction générerait une facture
-    // Pour cette démo, nous allons simplement afficher les détails de la commande
-    const invoice = `
-      <html>
-      <head>
-        <title>Facture - La Perle Rouge</title>
-        <style>
-          body {
-            font-family: 'Arial', sans-serif;
-            margin: 0;
-            padding: 20px;
-            color: #333;
-          }
-          .invoice {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            border: 1px solid #eee;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
-          }
-          .header {
-            text-align: center;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-          }
-          .title {
-            font-size: 24px;
-            font-weight: bold;
-            color: #e63946;
-          }
-          .info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-          }
-          th, td {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-            text-align: left;
-          }
-          th {
-            background-color: #f8f8f8;
-          }
-          .total {
-            margin-top: 20px;
-            text-align: right;
-            font-size: 18px;
-            font-weight: bold;
-          }
-          .footer {
-            margin-top: 30px;
-            text-align: center;
-            color: #777;
-            font-size: 14px;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="invoice">
-          <div class="header">
-            <div class="title">LA PERLE ROUGE</div>
-            <div>Facture #${order.id}</div>
-          </div>
-          <div class="info">
-            <div>
-              <div><strong>Date:</strong> ${new Date(order.date).toLocaleDateString()}</div>
-              <div><strong>Agent:</strong> ${order.agentName}</div>
-            </div>
-            <div>
-              <div><strong>La Perle Rouge</strong></div>
-              <div>123 Avenue des Cafés</div>
-              <div>75001 Paris, France</div>
-              <div>Tel: 01 23 45 67 89</div>
-            </div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Produit</th>
-                <th>Quantité</th>
-                <th>Prix unitaire</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${order.items.map(item => `
-                <tr>
-                  <td>${item.drinkName}</td>
-                  <td>${item.quantity}</td>
-                  <td>${item.unitPrice.toFixed(2)} MAD</td>
-                  <td>${(item.quantity * item.unitPrice).toFixed(2)} MAD</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          <div class="total">Total: ${order.total.toFixed(2)} MAD</div>
-          <div class="footer">
-            Merci de votre confiance. À bientôt chez La Perle Rouge !
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-    
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
-    if (printWindow) {
-      printWindow.document.write(invoice);
-      printWindow.document.close();
-      setTimeout(() => {
-        printWindow.print();
-      }, 500);
-    } else {
-      alert("Veuillez autoriser les fenêtres popup pour imprimer la facture.");
-    }
+    printThermalInvoice(order);
   };
   
   return (

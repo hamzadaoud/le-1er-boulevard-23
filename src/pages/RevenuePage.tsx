@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
-import { getRevenues, clearAllActivities, clearAllSystemData, printRevenueReport } from '../services/cafeService';
+import { getRevenues, clearAllActivities, clearAllSystemData } from '../services/cafeService';
+import { printThermalRevenueReport } from '../services/thermalRevenueService';
 import { checkIsAdmin } from '../services/authService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { CalendarDays, Calendar, Printer, Trash2, Database } from 'lucide-react';
@@ -101,7 +102,7 @@ const RevenuePage: React.FC = () => {
   };
   
   const handlePrintReport = () => {
-    printRevenueReport(filteredData, periodType, startDate, endDate, totalRevenue);
+    printThermalRevenueReport(filteredData, periodType, startDate, endDate, totalRevenue);
   };
 
   const handleClearActivities = () => {
