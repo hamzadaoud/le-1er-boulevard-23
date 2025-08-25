@@ -1,4 +1,3 @@
-
 // ESC/POS command utilities for thermal printers (RONGTA RP330 series)
 export class ESCPOSFormatter {
   // ESC/POS control commands
@@ -63,13 +62,15 @@ export class ESCPOSFormatter {
     return this.ESC + '3' + String.fromCharCode(dots);
   }
   
-  // Paper cutting
+  // Paper cutting - RONGTA RP330 compatible commands
   static cutPaper(): string {
-    return this.GS + 'V1'; // Full cut
+    // Use GS V 1 for full cut - standard for RONGTA RP330 series
+    return this.GS + 'V' + String.fromCharCode(1);
   }
   
   static partialCut(): string {
-    return this.GS + 'V0'; // Partial cut
+    // Use GS V 0 for partial cut
+    return this.GS + 'V' + String.fromCharCode(0);
   }
   
   // Character encoding
@@ -133,7 +134,7 @@ export class ESCPOSFormatter {
   }
   
   private static async printDirectly(content: string): Promise<void> {
-    // Method 1: Try Web Serial API for direct USB connection
+    // Method 1: Try Web Serial API for direct USB connection to thermal printer
     if ('serial' in navigator) {
       try {
         const port = await (navigator as any).serial.requestPort();
@@ -142,12 +143,13 @@ export class ESCPOSFormatter {
         const writer = port.writable.getWriter();
         const encoder = new TextEncoder();
         
-        // Send raw ESC/POS content including cut commands for thermal printer
+        // Send raw ESC/POS content WITH cut commands for thermal printer
+        // This ensures RONGTA RP330 will automatically cut the paper
         await writer.write(encoder.encode(content));
         await writer.close();
         await port.close();
         
-        console.log('Ticket printed successfully via Serial API with auto-cut');
+        console.log('Ticket printed successfully via Serial API with automatic paper cut');
         return;
       } catch (error) {
         console.warn('Serial printing failed:', error);
@@ -155,20 +157,19 @@ export class ESCPOSFormatter {
       }
     }
     
-    // Method 2: Try direct browser printing with cleaned content (no cut commands for browser)
+    // Method 2: Try direct browser printing (for thermal printers connected via drivers)
     try {
       const printFrame = document.createElement('iframe');
       printFrame.style.display = 'none';
       printFrame.style.position = 'absolute';
       printFrame.style.left = '-9999px';
-      // Add unique ID to ensure separate frames
       printFrame.id = `print-frame-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       document.body.appendChild(printFrame);
       
       const printDocument = printFrame.contentDocument;
       if (printDocument) {
-        // Clean content for browser display (remove cut commands and ESC/POS)
-        const cleanContent = this.cleanContent(content);
+        // For browser printing, clean content but keep structure
+        const cleanContent = this.cleanContentForBrowser(content);
           
         printDocument.write(`
           <html>
@@ -201,7 +202,6 @@ export class ESCPOSFormatter {
         `);
         printDocument.close();
         
-        // Wait a moment for content to load, then print and remove
         setTimeout(() => {
           printFrame.contentWindow?.print();
           setTimeout(() => {
@@ -211,7 +211,7 @@ export class ESCPOSFormatter {
           }, 1000);
         }, 100);
         
-        console.log('Ticket sent to printer via browser print (no auto-cut)');
+        console.log('Ticket sent to printer via browser print');
         return;
       }
     } catch (error) {
@@ -223,11 +223,10 @@ export class ESCPOSFormatter {
   }
   
   private static showBothTicketsDialog(clientTicket: string, agentTicket: string): void {
-    // Clean both tickets
-    const cleanClientTicket = this.cleanContent(clientTicket);
-    const cleanAgentTicket = this.cleanContent(agentTicket);
+    // Clean both tickets for browser display only
+    const cleanClientTicket = this.cleanContentForBrowser(clientTicket);
+    const cleanAgentTicket = this.cleanContentForBrowser(agentTicket);
 
-    // Create unique window name
     const windowName = `tickets_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const printWindow = window.open('', windowName, 'width=500,height=800,scrollbars=yes,resizable=yes');
     
@@ -341,7 +340,6 @@ export class ESCPOSFormatter {
       `);
       printWindow.document.close();
       
-      // Auto-focus and trigger print dialog after a short delay
       setTimeout(() => {
         printWindow.focus();
         printWindow.print();
@@ -349,7 +347,8 @@ export class ESCPOSFormatter {
     }
   }
 
-  private static cleanContent(content: string): string {
+  // Clean content for browser display only (removes ESC/POS commands)
+  private static cleanContentForBrowser(content: string): string {
     return content
       .replace(/\x1b@/g, '') // Remove init
       .replace(/\x1bR0/g, '') // Remove character set
@@ -358,7 +357,7 @@ export class ESCPOSFormatter {
       .replace(/\x1ba[0-2]/g, '') // Remove alignment commands
       .replace(/\x1b3./g, '') // Remove line spacing
       .replace(/\x1d[hHwVk]./g, '') // Remove barcode and cut commands
-      .replace(/\x1dV[01]/g, '') // Remove cut commands
+      .replace(/\x1dV[\x00-\x01]/g, '') // Remove cut commands (GS V 0 and GS V 1)
       .replace(/\x1dh[\x00-\xFF]*?\x1dk[\x00-\xFF]*?/g, '') // Remove complete barcode sequences
       .replace(/\x1dh.+/g, '') // Remove barcode height commands
       .replace(/\x1dw.+/g, '') // Remove barcode width commands  
@@ -371,29 +370,14 @@ export class ESCPOSFormatter {
       .trim();
   }
 
-  private static showPrintDialog(content: string): void {
-    // Comprehensive cleaning of ESC/POS commands
-    const cleanContent = content
-      .replace(/\x1b@/g, '') // Remove init
-      .replace(/\x1bR0/g, '') // Remove character set
-      .replace(/\x1b![0-9\x00-\x30]/g, '') // Remove text size commands
-      .replace(/\x1bE[01]/g, '') // Remove bold commands
-      .replace(/\x1ba[0-2]/g, '') // Remove alignment commands
-      .replace(/\x1b3./g, '') // Remove line spacing
-      .replace(/\x1d[hHwVk]./g, '') // Remove barcode and cut commands
-      .replace(/\x1dV[01]/g, '') // Remove cut commands
-      .replace(/\x1dh[\x00-\xFF]*?\x1dk[\x00-\xFF]*?/g, '') // Remove complete barcode sequences
-      .replace(/\x1dh.+/g, '') // Remove barcode height commands
-      .replace(/\x1dw.+/g, '') // Remove barcode width commands  
-      .replace(/\x1dH[0-9]/g, '') // Remove HRI position commands
-      .replace(/\x1dk[\x00-\xFF]+/g, '') // Remove barcode data commands
-      .replace(/[\x00-\x08\x0B-\x1F\x7F]/g, '') // Remove all control characters except \t and \n
-      .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up excessive line breaks
-      .replace(/^\s+|\s+$/g, '') // Trim whitespace
-      .replace(/\r/g, '') // Remove carriage returns
-      .trim();
+  // Keep old method for backward compatibility
+  private static cleanContent(content: string): string {
+    return this.cleanContentForBrowser(content);
+  }
 
-    // Create unique window name to ensure separate windows
+  private static showPrintDialog(content: string): void {
+    const cleanContent = this.cleanContentForBrowser(content);
+
     const windowName = `ticket_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const printWindow = window.open('', windowName, 'width=400,height=600,scrollbars=yes,resizable=yes');
     
@@ -451,7 +435,6 @@ export class ESCPOSFormatter {
       `);
       printWindow.document.close();
       
-      // Auto-focus and trigger print dialog after a short delay
       setTimeout(() => {
         printWindow.focus();
         printWindow.print();
