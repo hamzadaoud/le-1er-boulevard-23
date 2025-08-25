@@ -120,7 +120,16 @@ export class ESCPOSFormatter {
 
   // Print both tickets in the same window
   static printBothTickets(clientTicket: string, agentTicket: string): void {
-    this.showBothTicketsDialog(clientTicket, agentTicket);
+    // Try thermal printing first for both tickets
+    this.printDirectly(clientTicket).then(() => {
+      // Print agent ticket after a delay for physical separation
+      setTimeout(() => {
+        this.printDirectly(agentTicket);
+      }, 2000);
+    }).catch(() => {
+      // Fallback to showing both in same window
+      this.showBothTicketsDialog(clientTicket, agentTicket);
+    });
   }
   
   private static async printDirectly(content: string): Promise<void> {
