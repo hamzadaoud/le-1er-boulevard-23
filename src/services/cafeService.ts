@@ -352,16 +352,24 @@ export const clearAllSystemData = (): void => {
     throw new Error('Seuls les administrateurs peuvent vider toutes les données');
   }
   
-  // Vider toutes les données sauf les utilisateurs et les produits initiaux
+  // Sauvegarder les produits actuels avant de vider les données
+  const currentDrinks = localStorage.getItem("drinks");
+  
+  // Vider toutes les données sauf les utilisateurs et les produits
   localStorage.removeItem("orders");
   localStorage.removeItem("timeLogs");
   localStorage.removeItem("activities");
   localStorage.removeItem("loginActivities");
   
-  // Réinitialiser les produits aux valeurs par défaut
-  localStorage.setItem("drinks", JSON.stringify(initialDrinks));
+  // Restaurer les produits (conserver tous les articles du menu, y compris les salades, etc.)
+  if (currentDrinks) {
+    localStorage.setItem("drinks", currentDrinks);
+  } else {
+    // Seulement si aucun produit n'existe, utiliser les valeurs par défaut
+    localStorage.setItem("drinks", JSON.stringify(initialDrinks));
+  }
   
-  registerActivity("A vidé toutes les données du système");
+  registerActivity("A vidé toutes les données du système (produits préservés)");
 };
 
 // Nouvelle fonction pour imprimer un rapport de revenus
