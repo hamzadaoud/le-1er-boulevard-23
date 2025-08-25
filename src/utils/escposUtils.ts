@@ -142,18 +142,20 @@ export class ESCPOSFormatter {
         const writer = port.writable.getWriter();
         const encoder = new TextEncoder();
         
+        // Send raw ESC/POS content including cut commands for thermal printer
         await writer.write(encoder.encode(content));
         await writer.close();
         await port.close();
         
-        console.log('Ticket printed successfully via Serial API');
+        console.log('Ticket printed successfully via Serial API with auto-cut');
         return;
       } catch (error) {
         console.warn('Serial printing failed:', error);
+        throw error;
       }
     }
     
-    // Method 2: Try direct browser printing with cleaned content (each call creates new window)
+    // Method 2: Try direct browser printing with cleaned content (no cut commands for browser)
     try {
       const printFrame = document.createElement('iframe');
       printFrame.style.display = 'none';
@@ -165,26 +167,8 @@ export class ESCPOSFormatter {
       
       const printDocument = printFrame.contentDocument;
       if (printDocument) {
-        // Clean content for display
-        const cleanContent = content
-          .replace(/\x1b@/g, '') // Remove init
-          .replace(/\x1bR0/g, '') // Remove character set
-          .replace(/\x1b![0-9\x00-\x30]/g, '') // Remove text size commands
-          .replace(/\x1bE[01]/g, '') // Remove bold commands
-          .replace(/\x1ba[0-2]/g, '') // Remove alignment commands
-          .replace(/\x1b3./g, '') // Remove line spacing
-          .replace(/\x1d[hHwVk]./g, '') // Remove barcode and cut commands
-          .replace(/\x1dV[01]/g, '') // Remove cut commands
-          .replace(/\x1dh[\x00-\xFF]*?\x1dk[\x00-\xFF]*?/g, '') // Remove complete barcode sequences
-          .replace(/\x1dh.+/g, '') // Remove barcode height commands
-          .replace(/\x1dw.+/g, '') // Remove barcode width commands  
-          .replace(/\x1dH[0-9]/g, '') // Remove HRI position commands
-          .replace(/\x1dk[\x00-\xFF]+/g, '') // Remove barcode data commands
-          .replace(/[\x00-\x08\x0B-\x1F\x7F]/g, '') // Remove all control characters except \t and \n
-          .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up excessive line breaks
-          .replace(/^\s+|\s+$/g, '') // Trim whitespace
-          .replace(/\r/g, '') // Remove carriage returns
-          .trim();
+        // Clean content for browser display (remove cut commands and ESC/POS)
+        const cleanContent = this.cleanContent(content);
           
         printDocument.write(`
           <html>
@@ -227,15 +211,15 @@ export class ESCPOSFormatter {
           }, 1000);
         }, 100);
         
-        console.log('Ticket sent to printer via browser print');
+        console.log('Ticket sent to printer via browser print (no auto-cut)');
         return;
       }
     } catch (error) {
       console.warn('Browser printing failed:', error);
+      throw error;
     }
     
-    // Method 3: Fallback - show print dialog with cleaned content
-    this.showPrintDialog(content);
+    throw new Error('All printing methods failed');
   }
   
   private static showBothTicketsDialog(clientTicket: string, agentTicket: string): void {
