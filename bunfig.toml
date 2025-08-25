@@ -1,6 +1,5 @@
 
 [install]
-# Force registry usage and disable optional deps
 registry = "https://registry.npmjs.org/"
 optional = false
 exact = true
@@ -9,6 +8,5 @@ cache = false
 [install.scopes]
 "@electron" = { registry = "https://registry.npmjs.org/" }
 
-# Disable git protocol entirely to prevent cloning repos like @electron/node-gyp
 [install.git]
 enabled = false
