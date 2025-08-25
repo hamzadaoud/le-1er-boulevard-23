@@ -1,272 +1,248 @@
+# La Perle Rouge - Gestion de Café Restaurant
 
-# La Perle Rouge - Café Management System
+Application de gestion complète pour café-restaurant avec support web et desktop (Electron).
 
-## 🏪 Project Overview
+## 🚀 Fonctionnalités
 
-La Perle Rouge is a comprehensive café management web application built for **La Perle Rouge** café in Gueliz. This progressive web application streamlines daily operations including order management, inventory tracking, staff time management, and revenue reporting with integrated thermal printer support.
+### 📊 Gestion Complète
+- **Dashboard** avec métriques en temps réel
+- **Commandes** et gestion des tables
+- **Produits** et inventaire
+- **Agents** et suivi du temps  
+- **Revenus** et rapports financiers
+- **Factures** avec impression thermique
+- **Profils** utilisateurs et gestion des droits
 
-### Target Users
-- **Café Owners/Administrators**: Full system access, staff management, comprehensive reporting
-- **Café Staff/Agents**: Order processing, basic reporting, time tracking
+### 🖨️ Impression Thermique
+- Support imprimantes ESC/POS (RONGTA RP330, etc.)
+- Impression via Web Serial API (navigateurs)
+- Impression via Electron (application desktop)
+- Génération automatique de tickets clients/agents
+- Découpe automatique du papier
 
-### Key Capabilities
-- Real-time order processing and billing
-- Thermal receipt printing (RONGTA RP330 series compatible)
-- Staff time tracking and performance monitoring
-- Revenue analytics with detailed reporting
-- Product catalog management
-- Multi-user role-based access control
+### 🔐 Sécurité
+- Authentification utilisateur
+- Contrôle d'accès basé sur les rôles
+- Routes protégées (admin/agent)
+- Chiffrement des données sensibles
 
-## 🛠 Technology Stack
+## 🛠️ Technologies
 
-### Frontend & Web Technologies
-- **React 18** - Modern UI framework with hooks and functional components
-- **TypeScript** - Type safety and enhanced developer experience
-- **Vite** - Fast build tool and development server
-- **React Router** - Client-side routing and navigation
+- **Frontend**: React 18 + TypeScript + Vite
+- **UI**: Tailwind CSS + Shadcn/ui
+- **Routing**: React Router (HashRouter pour Electron)  
+- **Desktop**: Electron avec sécurité renforcée
+- **Build**: Electron Builder pour distribution
 
-### UI & Styling
-- **Tailwind CSS** - Utility-first CSS framework with custom theme
-- **shadcn/ui** - High-quality component library with Radix UI primitives
-- **Lucide React** - Comprehensive icon library
-- **Custom Design System** - Semantic color tokens and consistent spacing
+## 📦 Installation
 
-### Data & State Management
-- **Local Storage** - Client-side data persistence
-- **@tanstack/react-query** - Server state management (prepared for future API integration)
-- **React Hook Form** - Form validation and management with Zod schemas
+### Prérequis
+- Node.js 18+ ou Bun
+- Git
 
-### Hardware Integration
-- **Web Serial API** - Direct communication with thermal printers
-- **ESC/POS Commands** - Thermal printer control and formatting
+### Installation des Dépendances
 
-### Development Tools
-- **ESLint** - Code linting and quality assurance
-- **PostCSS** - CSS processing and optimization
-
-## ✅ Features & Progress
-
-### 🟢 Completed Features
-
-#### Core System
-- ✅ **User Authentication & Authorization** - Role-based access (Admin/Agent)
-- ✅ **Dashboard Analytics** - Revenue charts, top products, daily statistics
-- ✅ **Product Catalog Management** - CRUD operations for drinks and items
-- ✅ **Order Processing System** - Complete order workflow with receipt generation
-
-#### Staff Management
-- ✅ **Time Tracking** - Clock in/out system with daily logs
-- ✅ **Staff Directory** - Employee information and role management
-- ✅ **Activity Logging** - Comprehensive audit trail of user actions
-
-#### Reporting & Analytics
-- ✅ **Revenue Reports** - Daily, monthly, yearly analytics
-- ✅ **Agent Performance Reports** - Individual staff metrics
-- ✅ **Thermal Receipt Printing** - Customer and agent copies
-- ✅ **Consolidated Daily Reports** - Product summaries and agent attribution
-
-#### Hardware Integration
-- ✅ **Thermal Printer Support** - RONGTA RP330 series compatibility
-- ✅ **ESC/POS Protocol** - Complete command set implementation
-- ✅ **Serial Communication** - Direct printer connection via Web Serial API
-
-### 🚧 In Progress
-
-- 🚧 **Table Management System** - Table ordering and status tracking
-- 🚧 **Advanced Inventory Management** - Stock levels and automatic reordering
-
-### ⏳ Planned Features
-
-#### Database & Backend
-- ⏳ **Database Migration** - Move from localStorage to SQLite/PostgreSQL
-- ⏳ **REST API Development** - Backend service for data synchronization
-- ⏳ **Cloud Synchronization** - Multi-device data consistency
-
-#### Enhanced Features
-- ⏳ **Progressive Web App** - Mobile-responsive offline capabilities
-- ⏳ **Advanced Analytics** - Profit margins, trend analysis, forecasting
-- ⏳ **Customer Management** - Loyalty programs and customer profiles
-- ⏳ **Inventory Alerts** - Low stock notifications and automatic ordering
-- ⏳ **Multi-location Support** - Franchise management capabilities
-
-#### Cloud & Mobile
-- ⏳ **Cloud Deployment** - Hosted solution with real-time sync
-- ⏳ **Mobile Companion App** - Staff scheduling and basic operations
-- ⏳ **Offline Mode** - Local data caching with sync when online
-
-## 📁 Project Structure
-
-```
-src/
-├── components/          # Reusable UI components
-│   ├── ui/             # shadcn/ui component library
-│   └── ...             # Custom components (Dashboard, Layout, etc.)
-├── pages/              # Route-based page components
-├── services/           # Business logic and data services
-│   ├── authService.ts  # Authentication and user management
-│   ├── cafeService.ts  # Core business operations
-│   ├── thermalRevenueService.ts  # Thermal printing for reports
-│   └── ...
-├── types/              # TypeScript type definitions
-├── utils/              # Utility functions and helpers
-│   └── escposUtils.ts  # Thermal printer ESC/POS commands
-└── hooks/              # Custom React hooks
-```
-
-## 🚀 Installation & Setup
-
-### Prerequisites
-- **Node.js** 20+ LTS
-- **npm** 10.8+
-- USB thermal printer (RONGTA RP330 series recommended)
-- Modern web browser with Web Serial API support (Chrome, Edge)
-
-### Development Setup
-
+#### Avec NPM (Recommandé pour Electron)
 ```bash
-# Clone the repository
-git clone <YOUR_GIT_URL>
-cd <YOUR_PROJECT_NAME>
-
-# Install dependencies
+git clone <votre-repo>
+cd la-perle-rouge
 npm install
-
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
+npm install electron electron-builder wait-on --save-dev
 ```
 
-### Thermal Printer Setup
-1. Connect RONGTA RP330 via USB
-2. Ensure printer is powered and has paper loaded
-3. Grant Serial API permissions when prompted in browser
-4. Test printing from the application
+#### Avec Bun (Mode Web uniquement)
+```bash
+git clone <votre-repo>
+cd la-perle-rouge
+bun install
+```
 
-### Browser Compatibility
-- **Chrome/Chromium** 89+ (Recommended)
-- **Microsoft Edge** 89+
-- **Opera** 75+
-- **Firefox** - Limited support (no Web Serial API)
-- **Safari** - Limited support (no Web Serial API)
+**Note**: Pour Electron, NPM est recommandé car certaines dépendances natives nécessitent une compilation spécifique.
 
-## 👥 Usage Guide
+## 🚀 Développement
 
-### Administrator Access
-- **Login**: Use admin credentials
-- **Dashboard**: View comprehensive analytics and system overview
-- **Product Management**: Add, edit, delete menu items
-- **Staff Management**: Manage employee accounts and permissions
-- **Reports**: Generate detailed revenue and performance reports
-- **System Maintenance**: Clear data, manage system settings
+### Mode Web (Développement)
+```bash
+# Avec Bun
+bun run dev
 
-### Agent/Staff Access
-- **Login**: Use provided staff credentials
-- **Order Processing**: Create customer orders and print receipts
-- **Time Tracking**: Clock in/out for shifts
-- **Basic Reports**: Print daily reports for shift handovers
-- **Product Lookup**: View menu and pricing information
+# Avec NPM
+npm run dev
+```
+Application accessible sur: http://localhost:8080
 
-## 🔧 Services & Architecture
+### Mode Electron (Desktop)
+```bash
+# Démarrer en mode développement Electron
+npm run electron:dev
+```
 
-### Core Services
-- **`authService.ts`** - User authentication, session management
-- **`cafeService.ts`** - Orders, products, time tracking, revenue calculation
-- **`thermalRevenueService.ts`** - Consolidated reporting for thermal printers
-- **`ticketService.ts`** - Receipt generation and customer billing
+Ajoutez ces scripts à votre `package.json`:
+```json
+{
+  "scripts": {
+    "electron:dev": "node scripts/electron-dev.js",
+    "electron:build": "node scripts/build-electron.js"
+  }
+}
+```
 
-### Key Data Models
-- **User**: Authentication and role management
-- **Order**: Transaction processing and item tracking
-- **Product/Drink**: Menu item catalog
-- **Revenue**: Financial reporting and analytics
-- **TimeLog**: Staff attendance and working hours
+## 📦 Build et Distribution
 
-## 🖨 Hardware Integration
+### Build Web
+```bash
+# Build pour production web
+npm run build
+```
 
-### Supported Printers
-- **RONGTA RP330 Series** (Primary support)
-- **Generic ESC/POS Compatible Printers**
+### Build Desktop (Electron)
+```bash
+# Build application desktop
+npm run electron:build
+```
 
-### Communication Protocol
-- **Web Serial API** - Direct USB communication through browser
-- **ESC/POS Commands** - Complete command set implementation
-- **Auto-reconnection** - Handles printer disconnections gracefully
+Cette commande:
+1. Build l'application React
+2. Package l'application Electron
+3. Crée les installateurs pour votre plateforme
 
-### Print Features
-- Customer receipts with order details
-- Agent copies for internal tracking
-- Daily consolidated reports
-- Revenue summaries with product breakdown
+### Distribution Multi-Plateformes
+L'application peut être compilée pour:
+- **Windows**: .exe, installateur NSIS, version portable
+- **macOS**: .dmg, .app
+- **Linux**: AppImage, .deb
 
-## 🔮 Future Improvements
+## 🖨️ Configuration Imprimante Thermique
 
-### Short Term (Next 3 months)
-- **Progressive Web App** - Offline capabilities and mobile installation
-- **Database Integration** - Replace localStorage with cloud database
-- **Table Management** - Complete table ordering system implementation
-- **Enhanced Analytics** - Profit margin analysis and trend forecasting
+### Navigateur Web
+1. Connectez votre imprimante ESC/POS via USB
+2. Utilisez un navigateur compatible (Chrome/Edge)
+3. Autorisez l'accès Web Serial API quand demandé
 
-### Medium Term (3-6 months)
-- **Cloud Deployment** - Hosted solution with real-time synchronization
-- **Advanced Inventory** - Stock management with automatic reordering
-- **Customer Profiles** - Loyalty programs and purchase history
-- **API Integration** - Third-party payment systems and delivery platforms
+### Application Desktop
+1. L'application détecte automatiquement les ports série
+2. Configuration automatique pour imprimantes RONGTA
+3. Support étendu des commandes ESC/POS
 
-### Long Term (6+ months)
-- **Multi-location Support** - Franchise management capabilities
-- **Mobile Native App** - iOS/Android applications
-- **AI Analytics** - Predictive analytics for inventory and staffing
-- **Advanced Reporting** - Custom report builder with export options
+### Imprimantes Testées
+- RONGTA RP330 series
+- Compatible ESC/POS standard
+- Port série/USB
 
-## 🛠 Development Notes
+## 📁 Structure du Projet
 
-### Code Organization
-- **Component-based Architecture** - Modular, reusable UI components
-- **Service Layer Pattern** - Separation of business logic from UI
-- **Type-safe Development** - Comprehensive TypeScript coverage
-- **Responsive Design** - Mobile-first approach with Tailwind CSS
+```
+la-perle-rouge/
+├── electron/                 # Fichiers Electron
+│   ├── main.js              # Processus principal
+│   └── preload.js           # Script de préchargement
+├── scripts/                 # Scripts de build
+│   ├── electron-dev.js      # Dev Electron
+│   └── build-electron.js    # Build Electron
+├── src/
+│   ├── components/          # Composants React
+│   ├── pages/              # Pages de l'application
+│   ├── services/           # Services métier
+│   ├── utils/              # Utilitaires
+│   │   ├── escposUtils.ts  # Gestion imprimante
+│   │   └── electronUtils.ts # Intégration Electron
+│   └── types/              # Types TypeScript
+├── public/                 # Assets statiques
+├── dist/                   # Build web
+├── dist-electron/          # Build desktop
+└── electron-builder.config.js # Config Electron Builder
+```
 
-### State Management
-- **Local State** - React hooks for component-level state
-- **Form State** - React Hook Form with Zod validation
-- **Global State** - Context API for user authentication
-- **Prepared for Server State** - TanStack Query integration ready
+## 🔧 Configuration
 
-### Performance Considerations
-- **Lazy Loading** - Route-based code splitting
-- **Optimized Builds** - Vite for fast development and production builds
-- **Efficient Rendering** - Minimal re-renders with proper dependency arrays
-- **Local Storage Optimization** - Efficient data serialization and caching
+### Routing pour Electron
+L'application utilise `HashRouter` au lieu de `BrowserRouter` pour compatibilité Electron:
 
-### PWA Features (Planned)
-- **Service Workers** - Offline functionality and caching
-- **Web App Manifest** - Native-like installation experience
-- **Background Sync** - Data synchronization when connection resumes
-- **Push Notifications** - Order alerts and system notifications
+```typescript
+// App.tsx
+import { HashRouter as Router } from 'react-router-dom';
+```
 
-## 🌐 Deployment
+### Configuration Electron
+- `electron-builder.config.js`: Configuration de build desktop
+- `electron/main.js`: Fenêtre principale et sécurité
+- `electron/preload.js`: API sécurisée renderer ↔ main
 
-### Web Hosting Options
-- **Netlify** - Static site hosting with CI/CD
-- **Vercel** - Optimized for React applications
-- **GitHub Pages** - Free hosting for open source projects
-- **Firebase Hosting** - Google Cloud integration
+## 🛡️ Sécurité
 
-### Production Considerations
-- **Environment Variables** - API keys and configuration
-- **HTTPS Required** - Web Serial API requires secure context
-- **Cross-Origin Policies** - Printer communication restrictions
-- **Browser Compatibility** - Feature detection and fallbacks
+### Web
+- HTTPS recommandé en production
+- Validation côté client et serveur
+- Gestion sécurisée des sessions
+
+### Desktop (Electron)
+- Context isolation activée
+- Node integration désactivée
+- Preload script sécurisé
+- Protection contre XSS/injection
+
+## 📱 Compatibilité
+
+### Navigateurs
+- Chrome 89+ (Web Serial API)
+- Edge 89+
+- Firefox (impression fallback)
+- Safari (impression fallback)
+
+### Systèmes d'Exploitation
+- Windows 10/11 (x64, x86)
+- macOS 10.15+ (Intel, Apple Silicon)
+- Linux Ubuntu 18.04+ (x64)
+
+## 🐛 Dépannage
+
+### Problèmes d'Installation Electron
+```bash
+# Nettoyer et réinstaller
+rm -rf node_modules package-lock.json
+npm install
+npm install electron electron-builder wait-on --save-dev
+
+# Alternative avec Yarn
+yarn install
+yarn add electron electron-builder wait-on --dev
+```
+
+### Problèmes de Build
+```bash
+# Rebuild des modules natifs
+npm run electron:rebuild
+# ou
+yarn electron:rebuild
+```
+
+### Impression Thermique
+1. Vérifiez la connexion USB/série
+2. Testez avec un autre navigateur
+3. Redémarrez l'imprimante
+4. Vérifiez les pilotes système
+
+## 🚀 Scripts Package.json
+
+Ajoutez ces scripts à votre `package.json`:
+
+```json
+{
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "electron:dev": "node scripts/electron-dev.js",
+    "electron:build": "node scripts/build-electron.js",
+    "electron:rebuild": "electron-rebuild"
+  }
+}
+```
+
+## 📄 Licence
+
+Copyright © 2024 La Perle Rouge. Tous droits réservés.
 
 ---
 
-## 📞 Support & Contributing
-
-For questions, bug reports, or feature requests, please contact the development team or create an issue in the project repository.
-
-**Built with ❤️ for La Perle Rouge - Gueliz**
+**Développé avec ❤️ pour La Perle Rouge**

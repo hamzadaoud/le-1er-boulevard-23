@@ -20,14 +20,19 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  base: mode === 'production' ? './' : '/',
+  base: './',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
+    emptyOutDir: true,
     rollupOptions: {
       output: {
         manualChunks: undefined
       }
     }
+  },
+  // Electron compatibility
+  define: {
+    global: 'globalThis',
   }
 }));

@@ -1,5 +1,7 @@
 
-// ESC/POS command utilities for thermal printers - Web Serial API only
+// ESC/POS command utilities for thermal printers - Web Serial API and Electron support
+import { printToElectronPrinter, isElectron } from './electronUtils';
+
 export class ESCPOSFormatter {
   // ESC/POS control commands
   static readonly ESC = '\x1b';
@@ -136,6 +138,20 @@ export class ESCPOSFormatter {
   }
   
   private static async printDirectly(content: string): Promise<void> {
+    // Try Electron printing first if available
+    if (isElectron()) {
+      try {
+        console.log('[ESCPOS] Printing via Electron...');
+        const success = await printToElectronPrinter(content);
+        if (success) {
+          console.log('Ticket printed successfully via Electron');
+          return;
+        }
+      } catch (error) {
+        console.warn('Electron printing failed, falling back to Web Serial:', error);
+      }
+    }
+    
     // Web Serial API printing
     if ('serial' in navigator) {
       try {
