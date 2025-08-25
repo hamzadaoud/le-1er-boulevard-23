@@ -1,4 +1,3 @@
-
 // ESC/POS command utilities for thermal printers (RONGTA RP330 series)
 export class ESCPOSFormatter {
   // ESC/POS control commands
@@ -10,8 +9,8 @@ export class ESCPOSFormatter {
   // Store the selected serial port to avoid repeated prompts
   private static selectedPort: any = null;
 
-  // New: feature flag to control serial printing (default disabled to avoid prompts)
-  private static preferSerial: boolean = false;
+  // Enable direct printing by default for Electron app
+  private static preferSerial: boolean = true;
 
   // Optional: allow apps to enable/disable serial printing explicitly
   static setPreferSerialPrinting(enable: boolean) {
@@ -125,199 +124,127 @@ export class ESCPOSFormatter {
     });
   }
   
-  // Print directly to thermal printer
+  // Print directly to thermal printer - simplified for Electron
   static print(content: string): void {
-    // Try direct printing methods in order of preference
     this.printDirectly(content);
   }
 
-  // Print both tickets in the same window
+  // Print both tickets directly
   static printBothTickets(clientTicket: string, agentTicket: string): void {
-    // Try thermal printing first for both tickets
     this.printDirectly(clientTicket).then(() => {
       // Print agent ticket after a delay for physical separation
       setTimeout(() => {
         this.printDirectly(agentTicket);
       }, 2000);
-    }).catch(() => {
-      // Fallback to showing both in same window
-      this.showBothTicketsDialog(clientTicket, agentTicket);
+    }).catch((error) => {
+      console.error('Direct printing failed:', error);
     });
   }
   
   private static async printDirectly(content: string): Promise<void> {
-    // Method 1: Optional Web Serial API (only if explicitly enabled AND a saved port exists)
-    if (this.preferSerial && 'serial' in navigator) {
+    // Direct printing for Electron - use Web Serial API or fallback to silent print
+    if ('serial' in navigator) {
       try {
-        // Do NOT prompt the user. Only use an already saved/selected port.
+        // Auto-request port if none selected
         if (!this.selectedPort) {
-          console.log('[ESCPOS] Serial printing enabled but no saved port found. Skipping serial and using browser print.');
-          // Fall through to browser printing
-        } else {
-          // Check if port is already open, if not open it
-          if (!this.selectedPort.readable) {
-            await this.selectedPort.open({ baudRate: 9600 });
-          }
-          
-          const writer = this.selectedPort.writable.getWriter();
-          const encoder = new TextEncoder();
-          
-          // Send raw ESC/POS content WITH cut commands for thermal printer
-          await writer.write(encoder.encode(content));
-          await writer.close();
-          
-          console.log('Ticket printed successfully via Serial API with automatic paper cut');
-          return;
+          console.log('[ESCPOS] Requesting serial port for thermal printer...');
+          this.selectedPort = await (navigator as any).serial.requestPort();
         }
+        
+        // Check if port is already open, if not open it
+        if (!this.selectedPort.readable) {
+          await this.selectedPort.open({ baudRate: 9600 });
+        }
+        
+        const writer = this.selectedPort.writable.getWriter();
+        const encoder = new TextEncoder();
+        
+        // Send raw ESC/POS content WITH cut commands for thermal printer
+        await writer.write(encoder.encode(content));
+        await writer.close();
+        
+        console.log('Ticket printed successfully via Serial API with automatic paper cut');
+        return;
       } catch (error) {
         console.warn('Serial printing failed:', error);
-        // Reset port on error so user can select a different one next time (if they opt in elsewhere)
+        // Reset port on error
         this.selectedPort = null;
         
         // Show error dialog in Electron if available
         if (typeof window !== 'undefined' && (window as any).electronAPI) {
           await (window as any).electronAPI.showErrorDialog(
             'Erreur d\'impression', 
-            'Impossible de se connecter à l\'imprimante thermique. Impression via le navigateur.'
+            'Impossible de se connecter à l\'imprimante thermique. Vérifiez la connexion USB.'
           );
         }
-        // fall through to browser printing fallback below
       }
     }
     
-    // Method 2: Reliable browser printing with a dedicated window (ensures print dialog opens)
+    // Fallback: Silent print using Electron's built-in printing
     try {
-      this.showPrintDialog(content);
-      console.log('Ticket sent to printer via dedicated print window');
-      return;
+      this.printSilently(content);
+      console.log('Ticket sent to default printer via Electron');
     } catch (error) {
-      console.warn('Browser print window failed:', error);
-      throw error;
+      console.error('Silent printing failed:', error);
     }
   }
   
-  private static showBothTicketsDialog(clientTicket: string, agentTicket: string): void {
-    // Clean both tickets for browser display only
-    const cleanClientTicket = this.cleanContentForBrowser(clientTicket);
-    const cleanAgentTicket = this.cleanContentForBrowser(agentTicket);
-
-    const windowName = `tickets_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const printWindow = window.open('', windowName, 'width=500,height=800,scrollbars=yes,resizable=yes');
+  private static printSilently(content: string): void {
+    // Clean content for printing
+    const cleanContent = this.cleanContentForBrowser(content);
     
-    if (printWindow) {
-      printWindow.document.write(`
+    // Create a hidden iframe for silent printing
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.top = '-1000px';
+    iframe.style.left = '-1000px';
+    iframe.style.width = '1px';
+    iframe.style.height = '1px';
+    document.body.appendChild(iframe);
+    
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (iframeDoc) {
+      iframeDoc.open();
+      iframeDoc.write(`
         <html>
         <head>
-          <title>Imprimer Tickets</title>
+          <title>Print</title>
           <style>
+            @page { 
+              margin: 0; 
+              size: 80mm auto;
+            }
             body { 
               font-family: 'Courier New', monospace; 
-              font-size: 12px; 
-              line-height: 1.4;
+              font-size: 10px; 
+              line-height: 1.2;
               margin: 0;
-              padding: 20px;
-              background: #f5f5f5;
-            }
-            .tickets-container {
-              display: flex;
-              flex-direction: column;
-              gap: 30px;
-              align-items: center;
-            }
-            .ticket-section {
-              background: white;
-              border: 2px solid #ddd;
-              border-radius: 8px;
-              padding: 20px;
-              width: 100%;
-              max-width: 350px;
-              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            }
-            .ticket-header {
-              background: #28a745;
-              color: white;
-              padding: 10px;
-              margin: -20px -20px 20px -20px;
-              border-radius: 6px 6px 0 0;
-              text-align: center;
-              font-weight: bold;
-              font-size: 14px;
+              padding: 5mm;
+              width: 70mm;
             }
             .ticket-content {
               white-space: pre-line;
               text-align: center;
-              font-family: 'Courier New', monospace;
-              font-size: 11px;
-              line-height: 1.3;
-            }
-            .print-btn {
-              background: #28a745;
-              color: white;
-              border: none;
-              padding: 12px 24px;
-              border-radius: 4px;
-              cursor: pointer;
-              margin: 20px 10px;
-              font-size: 14px;
-            }
-            .print-btn:hover {
-              background: #218838;
-            }
-            .print-controls {
-              text-align: center;
-              margin-bottom: 30px;
-              background: white;
-              padding: 20px;
-              border-radius: 8px;
-              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            }
-            @media print {
-              body { background: white; }
-              .no-print { display: none; }
-              .tickets-container { gap: 50px; }
-              .ticket-section { 
-                margin: 0; 
-                padding: 20px; 
-                box-shadow: none;
-                border: 1px solid #000;
-                page-break-inside: avoid;
-              }
-              .ticket-header {
-                background: #000 !important;
-                color: white !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-              }
             }
           </style>
         </head>
         <body>
-          <div class="no-print print-controls">
-            <h3>Tickets prêts à imprimer</h3>
-            <button class="print-btn" onclick="window.print()">🖨️ Imprimer les deux tickets</button>
-            <button class="print-btn" onclick="window.close()" style="background: #6c757d;">Fermer</button>
-          </div>
-          
-          <div class="tickets-container">
-            <div class="ticket-section">
-              <div class="ticket-header">TICKET CLIENT</div>
-              <div class="ticket-content">${cleanClientTicket}</div>
-            </div>
-            
-            <div class="ticket-section">
-              <div class="ticket-header">COPIE AGENT</div>
-              <div class="ticket-content">${cleanAgentTicket}</div>
-            </div>
-          </div>
+          <div class="ticket-content">${cleanContent}</div>
         </body>
         </html>
       `);
-      printWindow.document.close();
+      iframeDoc.close();
       
+      // Print silently after content loads
       setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-      }, 500);
+        if (iframe.contentWindow) {
+          iframe.contentWindow.print();
+        }
+        // Remove iframe after printing
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 1000);
+      }, 100);
     }
   }
 
@@ -343,77 +270,4 @@ export class ESCPOSFormatter {
       .replace(/\r/g, '') // Remove carriage returns
       .trim();
   }
-
-  // Keep old method for backward compatibility
-  private static cleanContent(content: string): string {
-    return this.cleanContentForBrowser(content);
-  }
-
-  private static showPrintDialog(content: string): void {
-    const cleanContent = this.cleanContentForBrowser(content);
-
-    const windowName = `ticket_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const printWindow = window.open('', windowName, 'width=400,height=600,scrollbars=yes,resizable=yes');
-    
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-        <head>
-          <title>Imprimer Ticket</title>
-          <style>
-            body { 
-              font-family: 'Courier New', monospace; 
-              font-size: 12px; 
-              line-height: 1.4;
-              margin: 0;
-              padding: 20px;
-            }
-            .ticket-content {
-              white-space: pre-line;
-              text-align: center;
-              font-family: 'Courier New', monospace;
-              font-size: 12px;
-              width: 100%;
-              max-width: 300px;
-              margin: 0 auto;
-            }
-            .print-btn {
-              background: #28a745;
-              color: white;
-              border: none;
-              padding: 12px 24px;
-              border-radius: 4px;
-              cursor: pointer;
-              margin: 20px 10px;
-              font-size: 14px;
-            }
-            .print-btn:hover {
-              background: #218838;
-            }
-            @media print {
-              .no-print { display: none; }
-              .ticket-content { margin: 0; padding: 0; }
-              body { margin: 0; padding: 0; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="no-print" style="text-align: center; margin-bottom: 20px;">
-            <h3>Ticket prêt à imprimer</h3>
-            <button class="print-btn" onclick="window.print()">🖨️ Imprimer</button>
-            <button class="print-btn" onclick="window.close()" style="background: #6c757d;">Fermer</button>
-          </div>
-          <div class="ticket-content">${cleanContent}</div>
-        </body>
-        </html>
-      `);
-      printWindow.document.close();
-      
-      setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-      }, 300);
-    }
-  }
 }
-
