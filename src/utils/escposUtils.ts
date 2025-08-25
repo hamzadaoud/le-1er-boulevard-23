@@ -153,37 +153,68 @@ export class ESCPOSFormatter {
     link.href = url;
     link.download = `ticket_${Date.now()}.txt`;
     
-    // Also show preview window
+    // Create clean preview content by removing ESC/POS commands
+    const cleanContent = content
+      .replace(/\x1b@/g, '') // Remove init
+      .replace(/\x1bR0/g, '') // Remove character set
+      .replace(/\x1b![0-9\x00-\x30]/g, '') // Remove text size commands
+      .replace(/\x1bE[01]/g, '') // Remove bold commands
+      .replace(/\x1ba[0-2]/g, '') // Remove alignment commands
+      .replace(/\x1b3./g, '') // Remove line spacing
+      .replace(/\x1d[hHwVk]./g, '') // Remove barcode and cut commands
+      .replace(/\x1dV[01]/g, '') // Remove cut commands
+      .replace(/\x1dh.+?\x1dk.+/g, '') // Remove complete barcode sequences
+      .replace(/[\x00-\x1f\x7f]/g, '') // Remove other control characters
+      .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up excessive line breaks
+      .trim();
+
+    // Show clean preview window
     const previewWindow = window.open('', '_blank', 'width=400,height=600');
     if (previewWindow) {
       previewWindow.document.write(`
         <html>
         <head>
-          <title>Aperçu Ticket Thermique</title>
+          <title>Aperçu Ticket</title>
           <style>
             body { 
               font-family: 'Courier New', monospace; 
               font-size: 12px; 
-              line-height: 1.2;
-              white-space: pre-wrap;
-              margin: 10px;
-              background: #f0f0f0;
+              line-height: 1.4;
+              margin: 20px;
+              background: #f5f5f5;
             }
             .thermal-preview {
               background: white;
-              padding: 10px;
-              border: 1px solid #ccc;
+              padding: 20px;
+              border: 1px solid #ddd;
+              border-radius: 8px;
               width: 300px;
               margin: 0 auto;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+              white-space: pre-line;
+              text-align: center;
+            }
+            .download-btn {
+              background: #007bff;
+              color: white;
+              border: none;
+              padding: 10px 20px;
+              border-radius: 4px;
+              cursor: pointer;
+              margin: 10px;
+            }
+            .download-btn:hover {
+              background: #0056b3;
             }
           </style>
         </head>
         <body>
-          <h3>Aperçu du ticket thermique</h3>
-          <p>Téléchargez le fichier et imprimez-le via votre logiciel d'impression thermique.</p>
-          <button onclick="window.print()">Imprimer cette prévisualisation</button>
-          <hr>
-          <div class="thermal-preview">${content.replace(/\n/g, '<br>').replace(/\x1b/g, '[ESC]').replace(/\x1d/g, '[GS]')}</div>
+          <div style="text-align: center; margin-bottom: 20px;">
+            <h3>Aperçu du Ticket</h3>
+            <button class="download-btn" onclick="document.getElementById('downloadLink').click()">Télécharger le fichier d'impression</button>
+            <a id="downloadLink" href="${url}" download="ticket_${Date.now()}.txt" style="display: none;"></a>
+          </div>
+          <div class="thermal-preview">${cleanContent}</div>
         </body>
         </html>
       `);
