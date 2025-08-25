@@ -94,6 +94,14 @@ export class ESCPOSFormatter {
   static horizontalLine(char: string = '-', width: number = 32): string {
     return char.repeat(width);
   }
+
+  // Pad a line with left and right columns to fit width (monospace 32 chars)
+  static padLine(left: string, right: string, width: number = 32): string {
+    const leftClean = left.trimEnd();
+    const rightClean = right.trim();
+    const spaces = Math.max(1, width - leftClean.length - rightClean.length);
+    return leftClean + ' '.repeat(spaces) + rightClean;
+  }
   
   // Format currency
   static formatCurrency(amount: number): string {
@@ -165,6 +173,10 @@ export class ESCPOSFormatter {
       .replace(/\x1dV[01]/g, '') // Remove cut commands
       .replace(/\x1dh.+?\x1dk.+/g, '') // Remove complete barcode sequences
       .replace(/[\x00-\x1f\x7f]/g, '') // Remove other control characters
+      .replace(/\[ESC\]/g, '') // Remove literal placeholders if any
+      .replace(/\[GS\]/g, '')
+      .replace(/\[LF\]/g, '')
+      .replace(/\[CR\]/g, '')
       .replace(/\n\s*\n\s*\n/g, '\n\n') // Clean up excessive line breaks
       .trim();
 
@@ -191,8 +203,8 @@ export class ESCPOSFormatter {
               width: 300px;
               margin: 0 auto;
               box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-              white-space: pre-line;
-              text-align: center;
+              white-space: pre;
+              text-align: left;
             }
             .download-btn {
               background: #007bff;
@@ -210,8 +222,9 @@ export class ESCPOSFormatter {
         </head>
         <body>
           <div style="text-align: center; margin-bottom: 20px;">
-            <h3>Aperçu du Ticket</h3>
+            <h3>Aperçu du ticket</h3>
             <button class="download-btn" onclick="document.getElementById('downloadLink').click()">Télécharger le fichier d'impression</button>
+            <button class="download-btn" onclick="window.print()">Imprimer la prévisualisation</button>
             <a id="downloadLink" href="${url}" download="ticket_${Date.now()}.txt" style="display: none;"></a>
           </div>
           <div class="thermal-preview">${cleanContent}</div>
