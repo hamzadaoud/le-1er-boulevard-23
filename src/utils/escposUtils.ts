@@ -171,73 +171,19 @@ export class ESCPOSFormatter {
             'Impossible de se connecter à l\'imprimante thermique. Vérifiez la connexion USB.'
           );
         }
-        throw error;
+        // fall through to browser printing fallback below
       }
     }
     
-    // Method 2: Try direct browser printing (for thermal printers connected via drivers)
+    // Method 2: Reliable browser printing with a dedicated window (ensures print dialog opens)
     try {
-      const printFrame = document.createElement('iframe');
-      printFrame.style.display = 'none';
-      printFrame.style.position = 'absolute';
-      printFrame.style.left = '-9999px';
-      printFrame.id = `print-frame-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      document.body.appendChild(printFrame);
-      
-      const printDocument = printFrame.contentDocument;
-      if (printDocument) {
-        // For browser printing, clean content but keep structure
-        const cleanContent = this.cleanContentForBrowser(content);
-          
-        printDocument.write(`
-          <html>
-            <head>
-              <title>Print Ticket</title>
-              <style>
-                @media print {
-                  body { margin: 0; padding: 0; }
-                  .ticket-content { page-break-after: avoid; }
-                }
-                body { 
-                  font-family: 'Courier New', monospace; 
-                  white-space: pre-line; 
-                  text-align: center; 
-                  font-size: 12px;
-                  margin: 0;
-                  padding: 20px;
-                }
-                .ticket-content {
-                  width: 100%;
-                  max-width: 300px;
-                  margin: 0 auto;
-                }
-              </style>
-            </head>
-            <body>
-              <div class="ticket-content">${cleanContent}</div>
-            </body>
-          </html>
-        `);
-        printDocument.close();
-        
-        setTimeout(() => {
-          printFrame.contentWindow?.print();
-          setTimeout(() => {
-            if (document.body.contains(printFrame)) {
-              document.body.removeChild(printFrame);
-            }
-          }, 1000);
-        }, 100);
-        
-        console.log('Ticket sent to printer via browser print');
-        return;
-      }
+      this.showPrintDialog(content);
+      console.log('Ticket sent to printer via dedicated print window');
+      return;
     } catch (error) {
-      console.warn('Browser printing failed:', error);
+      console.warn('Browser print window failed:', error);
       throw error;
     }
-    
-    throw new Error('All printing methods failed');
   }
   
   private static showBothTicketsDialog(clientTicket: string, agentTicket: string): void {
