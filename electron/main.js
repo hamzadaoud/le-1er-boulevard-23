@@ -1,5 +1,8 @@
 const { app, BrowserWindow, Menu, shell, ipcMain, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
+const { spawn } = require('child_process');
 const isDev = process.env.NODE_ENV === 'development';
 
 // Optional imports for printer support (only available when installed)
@@ -314,14 +317,40 @@ ipcMain.handle('print-data', async (event, data) => {
     if (thermalPrinter) {
       console.log(`Found system printer: ${thermalPrinter.name}`);
       
+      // On Windows, send raw ESC/POS data via the 'print' command to preserve control codes (cut)
+      if (process.platform === 'win32') {
+        const tmpDir = app.getPath('temp');
+        const tmpFile = path.join(tmpDir, `escpos-${Date.now()}.prn`);
+        try {
+          fs.writeFileSync(tmpFile, data, { encoding: 'binary' });
+        } catch (e) {
+          console.error('Failed writing temp print file:', e);
+          return await printToSerial(data);
+        }
+        return new Promise((resolve) => {
+          const cmd = `print /d:"${thermalPrinter.name}" "${tmpFile}"`;
+          const child = spawn('cmd', ['/c', cmd], { windowsHide: true });
+          child.on('exit', (code) => {
+            try { fs.unlinkSync(tmpFile); } catch {}
+            if (code === 0) {
+              console.log('Raw ESC/POS data sent via Windows print command');
+              resolve(true);
+            } else {
+              console.error('Windows print command failed with code:', code);
+              // Fallback to serial printer
+              printToSerial(data).then(resolve);
+            }
+          });
+        });
+      }
+
+      // Non-Windows fallback: use Electron silent print of the current page (HTML fallback)
       return new Promise((resolve) => {
         mainWindow.webContents.print({
           silent: true,
           printBackground: false,
           deviceName: thermalPrinter.name,
-          margins: {
-            marginType: 'none'
-          },
+          margins: { marginType: 'none' },
           pageRanges: '',
           duplexMode: 'simplex',
           collate: false,
@@ -330,7 +359,7 @@ ipcMain.handle('print-data', async (event, data) => {
           footer: ''
         }, (success, failureReason) => {
           if (success) {
-            console.log('Successfully printed to system printer');
+            console.log('Successfully printed to system printer (HTML fallback)');
             resolve(true);
           } else {
             console.error('Print failed:', failureReason);
