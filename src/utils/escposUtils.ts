@@ -9,8 +9,10 @@ export class ESCPOSFormatter {
   static readonly LF = '\n';
   static readonly CR = '\r';
   
-  // Store the selected serial port to avoid repeated prompts
+  // Store printer connection state
   private static selectedPort: any = null;
+  private static printerReady: boolean = false;
+  private static autoDetectionAttempted: boolean = false;
   
   // Initialize printer
   static init(): string {
@@ -138,6 +140,11 @@ export class ESCPOSFormatter {
   }
   
   private static async printDirectly(content: string): Promise<void> {
+    // Auto-detect printers on first use if not done already
+    if (!this.autoDetectionAttempted) {
+      await this.autoDetectPrinters();
+    }
+    
     // Try Electron printing first if available
     if (isElectron()) {
       try {
@@ -270,5 +277,48 @@ export class ESCPOSFormatter {
       .replace(/^\s+|\s+$/g, '') // Trim whitespace
       .replace(/\r/g, '') // Remove carriage returns
       .trim();
+  }
+  
+  // Auto-detect available printers
+  private static async autoDetectPrinters(): Promise<void> {
+    this.autoDetectionAttempted = true;
+    
+    if (isElectron()) {
+      try {
+        console.log('[ESCPOS] Auto-detecting Electron printers...');
+        // Electron printer detection will be handled by the updated main process
+        this.printerReady = true;
+        console.log('[ESCPOS] Electron printers ready for auto-detection');
+        return;
+      } catch (error) {
+        console.warn('Electron printer auto-detection failed:', error);
+      }
+    }
+    
+    // Web Serial API auto-detection (if supported)
+    if ('serial' in navigator) {
+      try {
+        console.log('[ESCPOS] Attempting to get previously granted serial ports...');
+        const ports = await (navigator as any).serial.getPorts();
+        
+        if (ports.length > 0) {
+          console.log(`[ESCPOS] Found ${ports.length} previously granted serial port(s)`);
+          // Use the first available port
+          this.selectedPort = ports[0];
+          this.printerReady = true;
+          console.log('[ESCPOS] Auto-selected serial port for printing');
+        } else {
+          console.log('[ESCPOS] No previously granted serial ports found');
+        }
+      } catch (error) {
+        console.warn('Serial port auto-detection failed:', error);
+      }
+    }
+  }
+  
+  // Initialize printer system (call this on app startup)
+  static async initialize(): Promise<void> {
+    console.log('[ESCPOS] Initializing printer system...');
+    await this.autoDetectPrinters();
   }
 }
