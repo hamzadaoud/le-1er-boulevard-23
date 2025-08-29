@@ -96,3 +96,10 @@ export const printToElectronPrinter = async (data: string): Promise<boolean> => 
   }
   return false;
 };
+
+export const listSystemPrinters = async (): Promise<any[]> => {
+  if (isElectron()) {
+    return await window.electronAPI?.listSystemPrinters() || [];
+  }
+  return [];
+};

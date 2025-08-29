@@ -16,6 +16,7 @@ export interface ElectronAPI {
   listSerialPorts: () => Promise<any[]>;
   connectToPrinter: (port: string) => Promise<boolean>;
   printData: (data: string) => Promise<boolean>;
+  listSystemPrinters: () => Promise<any[]>;
   
   // Storage operations
   store: {

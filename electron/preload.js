@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   listSerialPorts: () => ipcRenderer.invoke('list-serial-ports'),
   connectToPrinter: (port) => ipcRenderer.invoke('connect-printer', port),
   printData: (data) => ipcRenderer.invoke('print-data', data),
+  listSystemPrinters: () => ipcRenderer.invoke('list-system-printers'),
   
   // Storage operations
   store: {
