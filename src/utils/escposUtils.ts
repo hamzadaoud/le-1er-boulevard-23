@@ -32,21 +32,21 @@ export class ESCPOSFormatter {
     return this.ESC + 'a2';
   }
   
-  // Text size and style
+  // Text size and style with enhanced darkness
   static textNormal(): string {
-    return this.ESC + '!' + '\x00'; // Normal text
+    return this.ESC + '!' + '\x00' + this.ESC + 'E1'; // Normal text with bold for darkness
   }
-  
+
   static textBold(): string {
-    return this.ESC + 'E1'; // Bold on
+    return this.ESC + 'E1' + this.GS + '!' + '\x11'; // Bold on with enhanced font
   }
-  
+
   static textBoldOff(): string {
     return this.ESC + 'E0'; // Bold off
   }
-  
+
   static textDoubleHeight(): string {
-    return this.ESC + '!' + '\x10'; // Double height
+    return this.ESC + '!' + '\x10' + this.ESC + 'E1'; // Double height with bold
   }
   
   static textDoubleWidth(): string {
