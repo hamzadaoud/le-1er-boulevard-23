@@ -125,7 +125,6 @@ export const printTableTicket = (order: TableOrder): void => {
   agentCopy += ESCPOSFormatter.multipleLines(4);
   agentCopy += ESCPOSFormatter.cutPaper();
   
-  // Print both tickets as separate papers with proper cuts
-  const combinedTickets = customerTicket + ESCPOSFormatter.multipleLines(3) + agentCopy;
-  ESCPOSFormatter.print(combinedTickets);
+  // Print both tickets in the same window
+  ESCPOSFormatter.printBothTickets(customerTicket, agentCopy);
 };

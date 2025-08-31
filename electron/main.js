@@ -304,22 +304,15 @@ ipcMain.handle('list-system-printers', async () => {
 
 ipcMain.handle('print-data', async (event, data) => {
   try {
-    // Auto-detect best available printer
+    // First try Windows system printers
     const printers = mainWindow.webContents.getPrinters();
-    console.log('Available system printers:', printers.map(p => p.name));
-    
-    // Priority order for printer detection
     const thermalPrinter = printers.find(p => 
       p.name.toLowerCase().includes('thermal') || 
       p.name.toLowerCase().includes('receipt') ||
       p.name.toLowerCase().includes('ticket') ||
       p.name.toLowerCase().includes('generic') ||
-      p.name.toLowerCase().includes('text only') ||
-      p.name.toLowerCase().includes('rongta') ||
-      p.name.toLowerCase().includes('rp330') ||
-      p.name.toLowerCase().includes('pos') ||
-      p.name.toLowerCase().includes('escpos')
-    ) || printers[0]; // Fallback to first available printer
+      p.name.toLowerCase().includes('text only')
+    );
 
     if (thermalPrinter) {
       console.log(`Found system printer: ${thermalPrinter.name}`);

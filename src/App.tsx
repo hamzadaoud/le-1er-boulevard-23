@@ -3,7 +3,6 @@ import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import { getCurrentUser } from './services/authService';
-import { usePrinterInitialization } from './hooks/usePrinterInitialization';
 
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
@@ -47,9 +46,6 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 function App() {
-  // Initialize printer system on app startup
-  usePrinterInitialization();
-  
   return (
     <Router>
       <Routes>
